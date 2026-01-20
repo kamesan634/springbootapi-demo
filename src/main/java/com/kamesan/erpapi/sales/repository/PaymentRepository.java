@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -84,15 +84,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     /**
      * 根據付款日期範圍查詢（分頁）
      *
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @param pageable  分頁參數
      * @return 付款記錄分頁結果
      */
     @Query("SELECT p FROM Payment p WHERE p.paymentDate BETWEEN :startDate AND :endDate")
     Page<Payment> findByPaymentDateBetween(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
             Pageable pageable);
 
     /**
@@ -108,8 +108,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "AND p.paymentDate BETWEEN :startDate AND :endDate")
     Page<Payment> findByPaymentMethodAndDateRange(
             @Param("paymentMethod") PaymentMethod paymentMethod,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
             Pageable pageable);
 
     /**
@@ -131,8 +131,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
             "WHERE p.paymentDate BETWEEN :startDate AND :endDate")
     BigDecimal sumAmountByDateRange(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 計算指定付款方式在日期範圍內的付款總額
@@ -147,8 +147,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "AND p.paymentDate BETWEEN :startDate AND :endDate")
     BigDecimal sumAmountByPaymentMethodAndDateRange(
             @Param("paymentMethod") PaymentMethod paymentMethod,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 統計各付款方式的交易數量
@@ -161,8 +161,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "WHERE p.paymentDate BETWEEN :startDate AND :endDate " +
             "GROUP BY p.paymentMethod")
     List<Object[]> countByPaymentMethodGrouped(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 統計各付款方式的交易金額
@@ -175,8 +175,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "WHERE p.paymentDate BETWEEN :startDate AND :endDate " +
             "GROUP BY p.paymentMethod")
     List<Object[]> sumAmountByPaymentMethodGrouped(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 查詢指定門市的付款記錄（分頁）
@@ -201,8 +201,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "AND p.paymentDate BETWEEN :startDate AND :endDate")
     BigDecimal sumAmountByStoreIdAndDateRange(
             @Param("storeId") Long storeId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 計算訂單的付款記錄數量

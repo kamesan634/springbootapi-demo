@@ -486,7 +486,7 @@ public class OrderService {
      * @return 付款記錄分頁結果
      */
     @Transactional(readOnly = true)
-    public Page<PaymentDto> getPaymentsByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+    public Page<PaymentDto> getPaymentsByDateRange(LocalDate startDate, LocalDate endDate, Pageable pageable) {
         return paymentRepository.findByPaymentDateBetween(startDate, endDate, pageable)
                 .map(this::convertPaymentToDto);
     }

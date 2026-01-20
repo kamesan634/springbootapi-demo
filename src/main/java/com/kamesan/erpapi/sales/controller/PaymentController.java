@@ -19,7 +19,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -140,10 +140,10 @@ public class PaymentController {
     @GetMapping
     @Operation(summary = "查詢付款記錄列表", description = "依日期範圍查詢付款記錄（分頁）")
     public ApiResponse<Page<PaymentDto>> getPayments(
-            @Parameter(description = "開始日期時間", example = "2024-01-01T00:00:00")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @Parameter(description = "結束日期時間", example = "2024-01-31T23:59:59")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @Parameter(description = "開始日期", example = "2024-01-01")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "結束日期", example = "2024-01-31")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @ParameterObject @PageableDefault(size = 20, sort = "paymentDate", direction = Sort.Direction.DESC) Pageable pageable) {
 
         log.debug("查詢付款記錄，開始日期: {}, 結束日期: {}", startDate, endDate);
