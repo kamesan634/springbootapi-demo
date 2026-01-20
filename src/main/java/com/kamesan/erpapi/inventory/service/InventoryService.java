@@ -95,6 +95,20 @@ public class InventoryService {
     }
 
     /**
+     * 分頁查詢所有庫存
+     *
+     * @param pageable 分頁參數
+     * @return 庫存分頁
+     */
+    @Transactional(readOnly = true)
+    public Page<InventoryDto> getAllInventories(Pageable pageable) {
+        log.debug("分頁查詢所有庫存");
+
+        return inventoryRepository.findAll(pageable)
+                .map(InventoryDto::fromEntity);
+    }
+
+    /**
      * 分頁查詢倉庫的所有庫存
      *
      * @param warehouseId 倉庫 ID

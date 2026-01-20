@@ -56,6 +56,24 @@ public class InventoryController {
     // ==================== 庫存查詢 ====================
 
     /**
+     * 分頁查詢所有庫存
+     *
+     * @param pageable 分頁參數
+     * @return 庫存分頁
+     */
+    @GetMapping("/all")
+    @Operation(summary = "查詢所有庫存", description = "分頁查詢所有庫存記錄")
+    public ApiResponse<Page<InventoryDto>> getAllInventories(
+            @PageableDefault(size = 20, sort = "productId", direction = Sort.Direction.ASC)
+            Pageable pageable) {
+
+        log.info("分頁查詢所有庫存");
+
+        Page<InventoryDto> inventories = inventoryService.getAllInventories(pageable);
+        return ApiResponse.success(inventories);
+    }
+
+    /**
      * 查詢特定商品和倉庫的庫存
      *
      * @param productId   商品 ID
