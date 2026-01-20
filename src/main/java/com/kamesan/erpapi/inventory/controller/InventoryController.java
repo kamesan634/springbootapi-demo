@@ -21,7 +21,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -307,8 +307,8 @@ public class InventoryController {
      * @param productId    商品 ID（可選）
      * @param warehouseId  倉庫 ID（可選）
      * @param movementType 異動類型（可選）
-     * @param startTime    開始時間
-     * @param endTime      結束時間
+     * @param startDate    開始日期
+     * @param endDate      結束日期
      * @param pageable     分頁參數
      * @return 異動記錄分頁
      */
@@ -321,18 +321,18 @@ public class InventoryController {
             @RequestParam(required = false) Long warehouseId,
             @Parameter(description = "異動類型（可選）")
             @RequestParam(required = false) MovementType movementType,
-            @Parameter(description = "開始時間", required = true)
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @Parameter(description = "結束時間", required = true)
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            @Parameter(description = "開始日期", example = "2024-01-01")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "結束日期", example = "2024-01-31")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
 
-        log.info("搜尋異動記錄: productId={}, warehouseId={}, type={}, startTime={}, endTime={}",
-                productId, warehouseId, movementType, startTime, endTime);
+        log.info("搜尋異動記錄: productId={}, warehouseId={}, type={}, startDate={}, endDate={}",
+                productId, warehouseId, movementType, startDate, endDate);
 
         Page<InventoryMovementDto> movements = inventoryService.searchMovements(
-                productId, warehouseId, movementType, startTime, endTime, pageable);
+                productId, warehouseId, movementType, startDate, endDate, pageable);
         return ApiResponse.success(movements);
     }
 

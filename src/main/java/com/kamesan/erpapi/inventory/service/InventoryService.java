@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -467,8 +468,8 @@ public class InventoryService {
      * @param productId    商品 ID（可選）
      * @param warehouseId  倉庫 ID（可選）
      * @param movementType 異動類型（可選）
-     * @param startTime    開始時間
-     * @param endTime      結束時間
+     * @param startDate    開始日期
+     * @param endDate      結束日期
      * @param pageable     分頁參數
      * @return 異動記錄分頁
      */
@@ -477,15 +478,19 @@ public class InventoryService {
             Long productId,
             Long warehouseId,
             MovementType movementType,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
+            LocalDate startDate,
+            LocalDate endDate,
             Pageable pageable) {
 
-        log.debug("複合條件查詢異動記錄: productId={}, warehouseId={}, type={}, startTime={}, endTime={}",
-                productId, warehouseId, movementType, startTime, endTime);
+        log.debug("複合條件查詢異動記錄: productId={}, warehouseId={}, type={}, startDate={}, endDate={}",
+                productId, warehouseId, movementType, startDate, endDate);
+
+        // 將日期轉換為當天的開始和結束時間
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
         return movementRepository.searchMovements(
-                        productId, warehouseId, movementType, startTime, endTime, pageable)
+                        productId, warehouseId, movementType, startDateTime, endDateTime, pageable)
                 .map(InventoryMovementDto::fromEntity);
     }
 
