@@ -317,4 +317,212 @@ class CustomerControllerTest extends BaseIntegrationTest {
                     .andExpect(status().isNotFound());
         }
     }
+
+    @Nested
+    @DisplayName("GET /api/v1/customers/search - 搜尋會員")
+    class SearchCustomersTests {
+
+        @Test
+        @DisplayName("關鍵字搜尋應返回匹配結果")
+        void search_WithKeyword_ShouldReturnMatchingResults() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/search")
+                            .header("Authorization", bearerToken(token))
+                            .param("keyword", "測試"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content").isArray());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/customers/filter - 複合條件查詢")
+    class FilterCustomersTests {
+
+        @Test
+        @DisplayName("複合條件查詢應返回結果")
+        void filter_WithConditions_ShouldReturnResults() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/filter")
+                            .header("Authorization", bearerToken(token))
+                            .param("active", "true"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content").isArray());
+        }
+
+        @Test
+        @DisplayName("按等級篩選應返回結果")
+        void filter_ByLevel_ShouldReturnResults() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/filter")
+                            .header("Authorization", bearerToken(token))
+                            .param("levelId", testLevel.getId().toString()))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("按性別篩選應返回結果")
+        void filter_ByGender_ShouldReturnResults() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/filter")
+                            .header("Authorization", bearerToken(token))
+                            .param("gender", "M"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/customers/member-no/{memberNo} - 根據會員編號查詢")
+    class GetByMemberNoTests {
+
+        @Test
+        @DisplayName("有效會員編號應返回會員資訊")
+        void getByMemberNo_WithValidNo_ShouldReturnCustomer() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/member-no/" + testCustomer.getMemberNo())
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.memberNo").value(testCustomer.getMemberNo()));
+        }
+
+        @Test
+        @DisplayName("無效會員編號應返回 404")
+        void getByMemberNo_WithInvalidNo_ShouldReturnNotFound() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/member-no/INVALID-NO")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/customers/{id}/points - 點數操作")
+    class PointsOperationTests {
+
+        @Test
+        @DisplayName("增加點數應成功")
+        void addPoints_ShouldSucceed() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(post(CUSTOMERS_API + "/" + testCustomer.getId() + "/points/add")
+                            .header("Authorization", bearerToken(token))
+                            .param("points", "50")
+                            .param("reason", "測試增加點數"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("扣除點數應成功")
+        void deductPoints_ShouldSucceed() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(post(CUSTOMERS_API + "/" + testCustomer.getId() + "/points/deduct")
+                            .header("Authorization", bearerToken(token))
+                            .param("points", "10")
+                            .param("reason", "測試扣除點數"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("計算可獲得點數應返回數值")
+        void calculatePoints_ShouldReturnPoints() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/" + testCustomer.getId() + "/points/calculate")
+                            .header("Authorization", bearerToken(token))
+                            .param("spentAmount", "1000.00"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isNumber());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/customers/{id}/spending - 消費記錄")
+    class SpendingTests {
+
+        @Test
+        @DisplayName("記錄消費應成功")
+        void recordSpending_ShouldSucceed() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(post(CUSTOMERS_API + "/" + testCustomer.getId() + "/spending")
+                            .header("Authorization", bearerToken(token))
+                            .param("spentAmount", "500.00"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/customers/birthday - 壽星查詢")
+    class BirthdayTests {
+
+        @Test
+        @DisplayName("查詢今日壽星應返回列表")
+        void getTodayBirthday_ShouldReturnList() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/birthday/today")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isArray());
+        }
+
+        @Test
+        @DisplayName("查詢本月壽星應返回列表")
+        void getThisMonthBirthday_ShouldReturnList() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/birthday/month")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isArray());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/customers/statistics - 會員統計")
+    class StatisticsTests {
+
+        @Test
+        @DisplayName("應返回會員統計資訊")
+        void getStatistics_ShouldReturnStats() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(CUSTOMERS_API + "/statistics")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.totalCustomers").isNumber())
+                    .andExpect(jsonPath("$.data.activeCustomers").isNumber());
+        }
+    }
 }

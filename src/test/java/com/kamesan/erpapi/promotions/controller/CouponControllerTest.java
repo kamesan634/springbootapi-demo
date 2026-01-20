@@ -305,4 +305,218 @@ class CouponControllerTest extends BaseIntegrationTest {
                     .andExpect(status().isNotFound());
         }
     }
+
+    @Nested
+    @DisplayName("PUT /api/v1/coupons/{id} - 更新優惠券")
+    class UpdateCouponTests {
+
+        @Test
+        @DisplayName("更新不存在的優惠券應返回 404")
+        void update_WithInvalidId_ShouldReturnNotFound() throws Exception {
+            String token = generateAdminToken();
+            CreateCouponRequest request = CreateCouponRequest.builder()
+                    .code("COUPON_INVALID")
+                    .name("更新優惠券")
+                    .discountType(DiscountType.PERCENTAGE)
+                    .discountValue(new BigDecimal("20.00"))
+                    .startDate(LocalDateTime.now())
+                    .endDate(LocalDateTime.now().plusDays(60))
+                    .build();
+
+            mockMvc.perform(put(COUPONS_API + "/99999")
+                            .header("Authorization", bearerToken(token))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(toJson(request)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /api/v1/coupons/{id}/activate - 啟停用優惠券")
+    class ActivateDeactivateTests {
+
+        @Test
+        @DisplayName("應啟用優惠券成功")
+        void activate_ShouldSucceed() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(put(COUPONS_API + "/" + testCoupon.getId() + "/activate")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("應停用優惠券成功")
+        void deactivate_ShouldSucceed() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(put(COUPONS_API + "/" + testCoupon.getId() + "/deactivate")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/coupons/valid - 有效優惠券")
+    class ValidCouponsTests {
+
+        @Test
+        @DisplayName("應返回有效的優惠券列表")
+        void getValid_ShouldReturnCoupons() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(COUPONS_API + "/valid")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("應返回有效的優惠券列表（不分頁）")
+        void getValidList_ShouldReturnCoupons() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(COUPONS_API + "/valid/list")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isArray());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/coupons/upcoming - 即將生效優惠券")
+    class UpcomingCouponsTests {
+
+        @Test
+        @DisplayName("應返回即將生效的優惠券列表")
+        void getUpcoming_ShouldReturnCoupons() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(COUPONS_API + "/upcoming")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/coupons/expired - 已過期優惠券")
+    class ExpiredCouponsTests {
+
+        @Test
+        @DisplayName("應返回已過期的優惠券列表")
+        void getExpired_ShouldReturnCoupons() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(COUPONS_API + "/expired")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/coupons/search - 搜尋優惠券")
+    class SearchCouponsTests {
+
+        @Test
+        @DisplayName("關鍵字搜尋應返回相符結果")
+        void search_WithKeyword_ShouldReturnMatchingCoupons() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(COUPONS_API + "/search")
+                            .header("Authorization", bearerToken(token))
+                            .param("keyword", "測試"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/coupons/validate - 驗證優惠券")
+    class ValidateCouponTests {
+
+        @Test
+        @DisplayName("有效優惠券應驗證通過")
+        void validate_WithValidCoupon_ShouldSucceed() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(post(COUPONS_API + "/validate")
+                            .header("Authorization", bearerToken(token))
+                            .param("code", testCoupon.getCode())
+                            .param("orderAmount", "1000.00"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/coupons/use - 使用優惠券")
+    class UseCouponTests {
+
+        @Test
+        @DisplayName("使用有效優惠券應成功")
+        void use_WithValidCoupon_ShouldSucceed() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(post(COUPONS_API + "/use")
+                            .header("Authorization", bearerToken(token))
+                            .param("code", testCoupon.getCode())
+                            .param("orderAmount", "1000.00"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isNumber());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/coupons/calculate - 計算折扣")
+    class CalculateDiscountTests {
+
+        @Test
+        @DisplayName("應計算折扣金額")
+        void calculate_ShouldReturnDiscount() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(COUPONS_API + "/calculate")
+                            .header("Authorization", bearerToken(token))
+                            .param("code", testCoupon.getCode())
+                            .param("orderAmount", "1000.00"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isNumber());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/coupons/count/valid - 統計有效優惠券")
+    class CountValidTests {
+
+        @Test
+        @DisplayName("應返回有效優惠券數量")
+        void countValid_ShouldReturnCount() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(COUPONS_API + "/count/valid")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isNumber());
+        }
+    }
 }

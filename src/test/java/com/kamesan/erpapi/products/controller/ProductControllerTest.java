@@ -479,5 +479,129 @@ class ProductControllerTest extends BaseIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true));
         }
+
+        @Test
+        @DisplayName("分頁搜尋應返回分頁結果")
+        void search_WithPagination_ShouldReturnPagedResults() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(PRODUCTS_API + "/search")
+                            .header("Authorization", bearerToken(token))
+                            .param("keyword", "測試")
+                            .param("page", "1")
+                            .param("size", "5"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.size").value(5));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/products/barcode/{barcode} - 按條碼查詢")
+    class GetProductByBarcodeTests {
+
+        @Test
+        @DisplayName("有效條碼應返回商品")
+        void getByBarcode_WithValidBarcode_ShouldReturnProduct() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(PRODUCTS_API + "/barcode/" + testProduct.getBarcode())
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.barcode").value(testProduct.getBarcode()));
+        }
+
+        @Test
+        @DisplayName("無效條碼應返回 404")
+        void getByBarcode_WithInvalidBarcode_ShouldReturnNotFound() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(PRODUCTS_API + "/barcode/INVALID-BARCODE")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/products/category/{categoryId} - 按分類查詢")
+    class GetProductsByCategoryTests {
+
+        @Test
+        @DisplayName("有效分類 ID 應返回商品列表")
+        void getByCategory_WithValidCategoryId_ShouldReturnProducts() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(PRODUCTS_API + "/category/" + testCategory.getId())
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content").isArray());
+        }
+
+        @Test
+        @DisplayName("分頁查詢應正確返回")
+        void getByCategory_WithPagination_ShouldReturnPagedResults() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(PRODUCTS_API + "/category/" + testCategory.getId())
+                            .header("Authorization", bearerToken(token))
+                            .param("page", "1")
+                            .param("size", "10"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.size").value(10));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/products - 查詢條件測試")
+    class GetProductsWithFiltersTests {
+
+        @Test
+        @DisplayName("只查詢啟用商品應正確過濾")
+        void getAll_WithActiveOnly_ShouldReturnActiveProducts() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(PRODUCTS_API)
+                            .header("Authorization", bearerToken(token))
+                            .param("activeOnly", "true"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("排序應正確應用")
+        void getAll_WithSorting_ShouldReturnSortedResults() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(PRODUCTS_API)
+                            .header("Authorization", bearerToken(token))
+                            .param("sortBy", "name")
+                            .param("sortDir", "asc"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/v1/products/{id}/permanent - 永久刪除")
+    class HardDeleteProductTests {
+
+        @Test
+        @DisplayName("永久刪除不存在的商品應返回 404")
+        void hardDelete_WithInvalidId_ShouldReturnNotFound() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(delete(PRODUCTS_API + "/99999/permanent")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isNotFound());
+        }
     }
 }

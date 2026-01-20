@@ -302,5 +302,158 @@ class InventoryControllerTest extends BaseIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true));
         }
+
+        @Test
+        @DisplayName("應返回倉庫異動記錄列表")
+        void getMovementsByWarehouse_ShouldReturnMovementList() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/movements/warehouse/" + testStore.getId())
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("應根據商品和倉庫查詢異動記錄")
+        void getMovements_ByProductAndWarehouse_ShouldReturnMovements() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/movements")
+                            .header("Authorization", bearerToken(token))
+                            .param("productId", testProduct.getId().toString())
+                            .param("warehouseId", testStore.getId().toString()))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("根據參考單號查詢應返回結果")
+        void getMovementsByReferenceNo_ShouldReturnMovements() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/movements/reference/TEST-REF-001")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+
+        @Test
+        @DisplayName("複合條件搜尋應返回結果")
+        void searchMovements_ShouldReturnMovements() throws Exception {
+            String token = generateAdminToken();
+            String startTime = java.time.LocalDateTime.now().minusDays(30).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            String endTime = java.time.LocalDateTime.now().plusDays(1).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+            mockMvc.perform(get(INVENTORIES_API + "/movements/search")
+                            .header("Authorization", bearerToken(token))
+                            .param("startTime", startTime)
+                            .param("endTime", endTime))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/inventory/all - 查詢所有庫存")
+    class GetAllInventoriesTests {
+
+        @Test
+        @DisplayName("應返回所有庫存分頁列表")
+        void getAll_ShouldReturnPagedList() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/all")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content").isArray());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/inventory/product/{productId} - 查詢商品庫存")
+    class GetInventoriesByProductTests {
+
+        @Test
+        @DisplayName("應返回商品在所有倉庫的庫存")
+        void getByProduct_ShouldReturnInventories() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/product/" + testProduct.getId())
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isArray());
+        }
+
+        @Test
+        @DisplayName("應返回商品總庫存數量")
+        void getTotalQuantity_ShouldReturnTotal() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/product/" + testProduct.getId() + "/total")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isNumber());
+        }
+
+        @Test
+        @DisplayName("應返回商品可用庫存數量")
+        void getAvailableQuantity_ShouldReturnAvailable() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/product/" + testProduct.getId() + "/available")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isNumber());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/inventory/low-stock - 低庫存預警")
+    class LowStockTests {
+
+        @Test
+        @DisplayName("應返回低庫存列表")
+        void getLowStock_ShouldReturnLowStockItems() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/low-stock")
+                            .header("Authorization", bearerToken(token))
+                            .param("threshold", "1000"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.content").isArray());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/inventory/movement-types - 異動類型")
+    class MovementTypesTests {
+
+        @Test
+        @DisplayName("應返回所有異動類型")
+        void getMovementTypes_ShouldReturnAllTypes() throws Exception {
+            String token = generateAdminToken();
+
+            mockMvc.perform(get(INVENTORIES_API + "/movement-types")
+                            .header("Authorization", bearerToken(token)))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").isArray());
+        }
     }
 }
