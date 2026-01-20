@@ -134,7 +134,7 @@ public class TaxTypeController {
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
         Page<TaxType> taxTypes = taxTypeRepository.findAll(pageable);
 

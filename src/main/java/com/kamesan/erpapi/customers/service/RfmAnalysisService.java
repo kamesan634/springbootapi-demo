@@ -14,8 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,8 +54,6 @@ public class RfmAnalysisService {
         log.info("執行 RFM 分析: {} ~ {}", startDate, endDate);
 
         LocalDate today = LocalDate.now();
-        LocalDateTime startTime = startDate.atStartOfDay();
-        LocalDateTime endTime = endDate.atTime(LocalTime.MAX);
 
         // 取得所有客戶
         List<Customer> allCustomers = customerRepository.findAll();
@@ -66,7 +62,7 @@ public class RfmAnalysisService {
         List<CustomerRfm> customerRfms = new ArrayList<>();
 
         for (Customer customer : allCustomers) {
-            CustomerRfm rfm = calculateCustomerRfm(customer, startTime, endTime, today);
+            CustomerRfm rfm = calculateCustomerRfm(customer, startDate, endDate, today);
             if (rfm != null && rfm.getFrequency() > 0) {
                 customerRfms.add(rfm);
             }
@@ -104,26 +100,26 @@ public class RfmAnalysisService {
 
     private CustomerRfm calculateCustomerRfm(
             Customer customer,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
+            LocalDate startDate,
+            LocalDate endDate,
             LocalDate today) {
 
         Long customerId = customer.getId();
 
         // 查詢客戶訂單資料
-        List<Object[]> orderData = orderRepository.findCustomerOrderStats(customerId, startTime, endTime);
+        List<Object[]> orderData = orderRepository.findCustomerOrderStats(customerId, startDate, endDate);
 
         if (orderData.isEmpty() || orderData.get(0)[0] == null) {
             return null;
         }
 
         Object[] stats = orderData.get(0);
-        LocalDateTime lastOrderDate = (LocalDateTime) stats[0];
+        LocalDate lastOrderDate = (LocalDate) stats[0];
         Long orderCount = (Long) stats[1];
         BigDecimal totalAmount = stats[2] != null ? (BigDecimal) stats[2] : BigDecimal.ZERO;
 
         // 計算 Recency（最近購買距今天數）
-        int recencyDays = (int) ChronoUnit.DAYS.between(lastOrderDate.toLocalDate(), today);
+        int recencyDays = (int) ChronoUnit.DAYS.between(lastOrderDate, today);
 
         // 計算 RFM 分數
         int recencyScore = calculateRecencyScore(recencyDays);
@@ -141,7 +137,7 @@ public class RfmAnalysisService {
                 .customerCode(customer.getMemberNo())
                 .email(customer.getEmail())
                 .phone(customer.getPhone())
-                .lastPurchaseDate(lastOrderDate.toLocalDate())
+                .lastPurchaseDate(lastOrderDate)
                 .recencyDays(recencyDays)
                 .frequency(orderCount.intValue())
                 .monetary(totalAmount)

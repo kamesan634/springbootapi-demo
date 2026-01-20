@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 /**
  * 訂單查詢請求 DTO
@@ -62,18 +62,18 @@ public class OrderQueryRequest {
     private OrderStatus status;
 
     /**
-     * 開始日期時間
-     * <p>查詢此時間之後的訂單</p>
+     * 開始日期
+     * <p>查詢此日期之後的訂單</p>
      */
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @Schema(description = "開始日期時間", example = "2024-01-01T00:00:00")
-    private LocalDateTime startDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @Schema(description = "開始日期", example = "2024-01-01")
+    private LocalDate startDate;
 
     /**
-     * 結束日期時間
-     * <p>查詢此時間之前的訂單</p>
+     * 結束日期
+     * <p>查詢此日期之前的訂單</p>
      */
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    @Schema(description = "結束日期時間", example = "2024-01-31T23:59:59")
-    private LocalDateTime endDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @Schema(description = "結束日期", example = "2024-01-31")
+    private LocalDate endDate;
 }

@@ -115,7 +115,7 @@ public class ProductController {
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
         Page<ProductDto> products = activeOnly
                 ? productService.getActiveProducts(pageable)
@@ -254,7 +254,7 @@ public class ProductController {
             @Parameter(description = "每頁筆數")
             @RequestParam(defaultValue = "20") int size) {
 
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("name").ascending());
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by("name").ascending());
 
         Page<ProductDto> products = productService.searchProducts(keyword, pageable);
 
@@ -281,7 +281,7 @@ public class ProductController {
             @Parameter(description = "每頁筆數")
             @RequestParam(defaultValue = "20") int size) {
 
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("name").ascending());
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by("name").ascending());
 
         Page<ProductDto> products = productService.getProductsByCategory(categoryId, pageable);
 

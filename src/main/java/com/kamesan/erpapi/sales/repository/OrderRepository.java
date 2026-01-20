@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -101,31 +102,31 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /**
      * 根據日期範圍查詢訂單（分頁）
      *
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @param pageable  分頁參數
      * @return 訂單分頁結果
      */
     @Query("SELECT o FROM Order o WHERE o.orderDate BETWEEN :startDate AND :endDate")
     Page<Order> findByOrderDateBetween(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
             Pageable pageable);
 
     /**
      * 根據門市和日期範圍查詢訂單（分頁）
      *
      * @param storeId   門市 ID
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @param pageable  分頁參數
      * @return 訂單分頁結果
      */
     @Query("SELECT o FROM Order o WHERE o.storeId = :storeId AND o.orderDate BETWEEN :startDate AND :endDate")
     Page<Order> findByStoreIdAndOrderDateBetween(
             @Param("storeId") Long storeId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
             Pageable pageable);
 
     /**
@@ -142,8 +143,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * @param storeId    門市 ID（可為 null）
      * @param customerId 客戶 ID（可為 null）
      * @param status     訂單狀態（可為 null）
-     * @param startDate  開始日期時間（可為 null）
-     * @param endDate    結束日期時間（可為 null）
+     * @param startDate  開始日期（可為 null）
+     * @param endDate    結束日期（可為 null）
      * @param pageable   分頁參數
      * @return 訂單分頁結果
      */
@@ -157,8 +158,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("storeId") Long storeId,
             @Param("customerId") Long customerId,
             @Param("status") OrderStatus status,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
             Pageable pageable);
 
     /**
@@ -175,23 +176,23 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * 查詢指定門市的今日訂單數量
      *
      * @param storeId   門市 ID
-     * @param startDate 今日開始時間
-     * @param endDate   今日結束時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @return 訂單數量
      */
     @Query("SELECT COUNT(o) FROM Order o WHERE o.storeId = :storeId AND o.orderDate BETWEEN :startDate AND :endDate")
     Long countByStoreIdAndDateRange(
             @Param("storeId") Long storeId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 計算指定門市的日期範圍內銷售總額
      *
      * @param storeId   門市 ID
      * @param status    訂單狀態（通常為 PAID）
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @return 銷售總額
      */
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
@@ -200,37 +201,37 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     BigDecimal sumTotalAmountByStoreIdAndStatusAndDateRange(
             @Param("storeId") Long storeId,
             @Param("status") OrderStatus status,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 計算指定日期範圍內的銷售總額（所有門市）
      *
      * @param status    訂單狀態（通常為 PAID）
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @return 銷售總額
      */
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
             "WHERE o.status = :status AND o.orderDate BETWEEN :startDate AND :endDate")
     BigDecimal sumTotalAmountByStatusAndDateRange(
             @Param("status") OrderStatus status,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 查詢各門市的訂單數量統計
      *
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @return 門市 ID 和訂單數量的列表
      */
     @Query("SELECT o.storeId, COUNT(o) FROM Order o " +
             "WHERE o.orderDate BETWEEN :startDate AND :endDate " +
             "GROUP BY o.storeId")
     List<Object[]> countByStoreGrouped(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 查詢各狀態的訂單數量統計
@@ -276,47 +277,47 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /**
      * 統計日期範圍內的訂單數量
      *
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @return 訂單數量
      */
     @Query("SELECT COUNT(o) FROM Order o WHERE o.orderDate BETWEEN :startDate AND :endDate")
     Long countByDateRange(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 統計日期範圍內已付款訂單數量
      *
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @return 已付款訂單數量
      */
     @Query("SELECT COUNT(o) FROM Order o WHERE o.status = 'PAID' AND o.orderDate BETWEEN :startDate AND :endDate")
     Long countPaidByDateRange(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 按日期彙總銷售額
      *
-     * @param startDate 開始日期時間
-     * @param endDate   結束日期時間
+     * @param startDate 開始日期
+     * @param endDate   結束日期
      * @return 日期和銷售額列表 [日期, 銷售額, 訂單數]
      */
-    @Query("SELECT FUNCTION('DATE', o.orderDate), COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
+    @Query("SELECT o.orderDate, COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
            "FROM Order o WHERE o.status = 'PAID' AND o.orderDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY FUNCTION('DATE', o.orderDate) ORDER BY FUNCTION('DATE', o.orderDate)")
+           "GROUP BY o.orderDate ORDER BY o.orderDate")
     List<Object[]> sumSalesByDateRange(
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 
     /**
      * 查詢客戶訂單統計（用於 RFM 分析）
      *
      * @param customerId 客戶 ID
-     * @param startDate  開始日期時間
-     * @param endDate    結束日期時間
+     * @param startDate  開始日期
+     * @param endDate    結束日期
      * @return [最後購買日期, 訂單數量, 總消費金額]
      */
     @Query("SELECT MAX(o.orderDate), COUNT(o), COALESCE(SUM(o.totalAmount), 0) " +
@@ -324,6 +325,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "AND o.orderDate BETWEEN :startDate AND :endDate")
     List<Object[]> findCustomerOrderStats(
             @Param("customerId") Long customerId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

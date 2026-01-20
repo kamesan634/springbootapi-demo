@@ -98,7 +98,7 @@ public class CategoryController {
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
         Page<CategoryDto> categories = activeOnly
                 ? categoryService.getActiveCategories(pageable)
@@ -237,7 +237,7 @@ public class CategoryController {
             @Parameter(description = "每頁筆數")
             @RequestParam(defaultValue = "20") int size) {
 
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("sortOrder").ascending());
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, Sort.by("sortOrder").ascending());
 
         Page<CategoryDto> categories = categoryService.searchCategories(keyword, pageable);
 

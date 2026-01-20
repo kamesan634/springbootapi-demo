@@ -116,7 +116,7 @@ public class CustomerController {
         Sort sort = sortDir.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
         PageResponse<CustomerDto> result = customerService.getCustomers(pageable);
 
@@ -152,7 +152,7 @@ public class CustomerController {
 
         log.info("API 請求: 搜尋會員 - keyword: {}", keyword);
 
-        Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         PageResponse<CustomerDto> result = customerService.searchCustomers(keyword, pageable);
 
         log.info("搜尋會員成功，共 {} 筆", result.getTotalElements());
@@ -199,7 +199,7 @@ public class CustomerController {
 
         log.info("API 請求: 複合條件查詢會員");
 
-        Pageable pageable = PageRequest.of(page - 1, size);
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
         PageResponse<CustomerDto> result = customerService.findCustomers(
                 keyword, levelId, active, gender, pageable);
 

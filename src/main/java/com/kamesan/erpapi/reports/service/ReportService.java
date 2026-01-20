@@ -15,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,28 +48,21 @@ public class ReportService {
         LocalDate today = LocalDate.now();
         LocalDate monthStart = today.withDayOfMonth(1);
         LocalDate yearStart = today.withDayOfYear(1);
-
-        // 時間範圍
-        LocalDateTime todayStart = today.atStartOfDay();
-        LocalDateTime todayEnd = today.atTime(LocalTime.MAX);
-        LocalDateTime monthStartTime = monthStart.atStartOfDay();
-        LocalDateTime yearStartTime = yearStart.atStartOfDay();
+        LocalDate yesterday = today.minusDays(1);
 
         // 銷售統計 - 查詢實際數據
         BigDecimal todaySales = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, todayStart, todayEnd);
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, today, today);
         BigDecimal monthSales = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, monthStartTime, todayEnd);
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, monthStart, today);
         BigDecimal yearSales = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, yearStartTime, todayEnd);
-        Long todayOrderCount = orderRepository.countByDateRange(todayStart, todayEnd);
-        Long monthOrderCount = orderRepository.countByDateRange(monthStartTime, todayEnd);
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, yearStart, today);
+        Long todayOrderCount = orderRepository.countByDateRange(today, today);
+        Long monthOrderCount = orderRepository.countByDateRange(monthStart, today);
 
         // 計算銷售成長率（與昨日比較）
-        LocalDateTime yesterdayStart = today.minusDays(1).atStartOfDay();
-        LocalDateTime yesterdayEnd = today.minusDays(1).atTime(LocalTime.MAX);
         BigDecimal yesterdaySales = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, yesterdayStart, yesterdayEnd);
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, yesterday, yesterday);
         BigDecimal salesGrowthRate = BigDecimal.ZERO;
         if (yesterdaySales.compareTo(BigDecimal.ZERO) > 0) {
             salesGrowthRate = todaySales.subtract(yesterdaySales)
@@ -89,8 +80,8 @@ public class ReportService {
         Integer totalCustomers = (int) customerRepository.count();
 
         // 圖表資料 - 最近 7 天銷售
-        LocalDateTime chartStart = today.minusDays(6).atStartOfDay();
-        List<Object[]> salesData = orderRepository.sumSalesByDateRange(chartStart, todayEnd);
+        LocalDate chartStart = today.minusDays(6);
+        List<Object[]> salesData = orderRepository.sumSalesByDateRange(chartStart, today);
 
         // 建立日期到銷售資料的映射
         java.util.Map<String, DashboardDto.SalesChartData> salesMap = new java.util.HashMap<>();
@@ -267,16 +258,13 @@ public class ReportService {
     public ProfitAnalysisDto getProfitAnalysis(LocalDate startDate, LocalDate endDate, Long storeId) {
         log.debug("取得利潤分析，期間: {} ~ {}, 門市: {}", startDate, endDate, storeId);
 
-        LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX);
-
         // 取得銷售總額
         BigDecimal totalRevenue = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, startDateTime, endDateTime);
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, startDate, endDate);
         if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
 
         // 訂單數量
-        Long orderCount = orderRepository.countByDateRange(startDateTime, endDateTime);
+        Long orderCount = orderRepository.countByDateRange(startDate, endDate);
 
         // 計算平均訂單金額
         BigDecimal averageOrderValue = orderCount > 0 ?
@@ -299,14 +287,11 @@ public class ReportService {
         List<ProfitAnalysisDto.DailyProfit> dailyProfits = new ArrayList<>();
         LocalDate current = startDate;
         while (!current.isAfter(endDate)) {
-            LocalDateTime dayStart = current.atStartOfDay();
-            LocalDateTime dayEnd = current.atTime(LocalTime.MAX);
-
             BigDecimal dayRevenue = orderRepository.sumTotalAmountByStatusAndDateRange(
-                    com.kamesan.erpapi.sales.entity.OrderStatus.PAID, dayStart, dayEnd);
+                    com.kamesan.erpapi.sales.entity.OrderStatus.PAID, current, current);
             if (dayRevenue == null) dayRevenue = BigDecimal.ZERO;
 
-            Long dayOrderCount = orderRepository.countByDateRange(dayStart, dayEnd);
+            Long dayOrderCount = orderRepository.countByDateRange(current, current);
             BigDecimal dayCost = dayRevenue.multiply(estimatedCostRatio);
             BigDecimal dayProfit = dayRevenue.subtract(dayCost);
             BigDecimal dayMargin = dayRevenue.compareTo(BigDecimal.ZERO) > 0 ?
@@ -361,24 +346,18 @@ public class ReportService {
         log.debug("取得期間比較，本期: {} ~ {}, 上期: {} ~ {}", currentStart, currentEnd, previousStart, previousEnd);
 
         // 本期資料
-        LocalDateTime currentStartTime = currentStart.atStartOfDay();
-        LocalDateTime currentEndTime = currentEnd.atTime(LocalTime.MAX);
-
         BigDecimal currentRevenue = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, currentStartTime, currentEndTime);
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, currentStart, currentEnd);
         if (currentRevenue == null) currentRevenue = BigDecimal.ZERO;
 
-        Long currentOrderCount = orderRepository.countByDateRange(currentStartTime, currentEndTime);
+        Long currentOrderCount = orderRepository.countByDateRange(currentStart, currentEnd);
 
         // 上期資料
-        LocalDateTime previousStartTime = previousStart.atStartOfDay();
-        LocalDateTime previousEndTime = previousEnd.atTime(LocalTime.MAX);
-
         BigDecimal previousRevenue = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, previousStartTime, previousEndTime);
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, previousStart, previousEnd);
         if (previousRevenue == null) previousRevenue = BigDecimal.ZERO;
 
-        Long previousOrderCountLong = orderRepository.countByDateRange(previousStartTime, previousEndTime);
+        Long previousOrderCountLong = orderRepository.countByDateRange(previousStart, previousEnd);
 
         // 計算變化
         BigDecimal revenueChange = currentRevenue.subtract(previousRevenue);

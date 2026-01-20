@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
  * @version 1.0.0
  */
 @Entity
-@Table(name = "inventories",
+@Table(name = "inventory",
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_inventory_product_warehouse",
