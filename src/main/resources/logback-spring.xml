@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    零售業簡易ERP系統 - Logback 日誌配置
+
+    功能說明：
+    1. 控制台輸出 - 彩色格式，方便開發除錯
+    2. 檔案輸出 - 滾動式日誌，按日期和大小分割
+    3. API 請求日誌 - 記錄所有 API 請求與回應
+    4. 錯誤日誌 - 獨立記錄錯誤訊息
+-->
+<configuration>
+    <!-- ===================================================================== -->
+    <!-- 引入 Spring Boot 預設配置 -->
+    <!-- ===================================================================== -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- ===================================================================== -->
+    <!-- 屬性定義 -->
+    <!-- ===================================================================== -->
+    <!-- 日誌路徑 -->
+    <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
+    <!-- 應用程式名稱 -->
+    <property name="APP_NAME" value="erp-api"/>
+    <!-- 日誌格式 -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n"/>
+    <!-- 彩色控制台格式 -->
+    <property name="CONSOLE_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr([%thread]){magenta} %clr(%-5level) %clr([%X{traceId:-}]){cyan} %clr(%logger{36}){blue} %clr(-){faint} %msg%n"/>
+
+    <!-- ===================================================================== -->
+    <!-- 控制台輸出 -->
+    <!-- ===================================================================== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================================== -->
+    <!-- 一般日誌檔案輸出（滾動式） -->
+    <!-- ===================================================================== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日誌檔案路徑 -->
+        <file>${LOG_PATH}/${APP_NAME}.log</file>
+        <!-- 滾動策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 檔案名稱模式 -->
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- 單檔案最大大小 -->
+            <maxFileSize>50MB</maxFileSize>
+            <!-- 保留天數 -->
+            <maxHistory>30</maxHistory>
+            <!-- 總大小上限 -->
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================================== -->
+    <!-- 錯誤日誌檔案輸出 -->
+    <!-- ===================================================================== -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}-error.log</file>
+        <!-- 只記錄 ERROR 等級 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================================== -->
+    <!-- API 請求日誌檔案輸出 -->
+    <!-- ===================================================================== -->
+    <appender name="API_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}-api.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}-api.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===================================================================== -->
+    <!-- 非同步輸出（提升效能） -->
+    <!-- ===================================================================== -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>256</queueSize>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
+    <!-- ===================================================================== -->
+    <!-- Logger 配置 -->
+    <!-- ===================================================================== -->
+
+    <!-- API 請求日誌 Logger -->
+    <logger name="API_LOGGER" level="INFO" additivity="false">
+        <appender-ref ref="API_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Spring Security 日誌 -->
+    <logger name="org.springframework.security" level="INFO"/>
+
+    <!-- Hibernate SQL 日誌 -->
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+
+    <!-- Flyway 日誌 -->
+    <logger name="org.flywaydb" level="INFO"/>
+
+    <!-- HikariCP 日誌 -->
+    <logger name="com.zaxxer.hikari" level="INFO"/>
+
+    <!-- Redis 日誌 -->
+    <logger name="io.lettuce" level="INFO"/>
+
+    <!-- 應用程式日誌 -->
+    <logger name="com.kamesan.erpapi" level="DEBUG"/>
+
+    <!-- ===================================================================== -->
+    <!-- 環境特定配置 -->
+    <!-- ===================================================================== -->
+
+    <!-- 開發環境 -->
+    <springProfile name="dev">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- Docker 環境 -->
+    <springProfile name="docker">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- 測試環境 -->
+    <springProfile name="test">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- 預設配置 -->
+    <springProfile name="default">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
+        </root>
+    </springProfile>
+</configuration>

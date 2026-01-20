@@ -1,0 +1,146 @@
+# =============================================================================
+# 零售業簡易ERP系統 - Docker Compose 配置
+# =============================================================================
+#
+# 本配置包含以下服務：
+#   - app: Spring Boot 應用程式 (Port: 8005)
+#   - mysql: MySQL 8.4 資料庫 (Port: 3305)
+#   - redis: Redis 快取服務 (Port: 6385)
+#
+# 使用方式：
+#   啟動服務: docker-compose up -d
+#   停止服務: docker-compose down
+#   查看日誌: docker-compose logs -f app
+#   重建服務: docker-compose up -d --build
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # Spring Boot 應用程式
+  # ===========================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: erp-api
+    ports:
+      - "8005:8005"
+    environment:
+      # Spring 配置
+      - SPRING_PROFILES_ACTIVE=docker
+      # 資料庫配置
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/springbootapi_demo_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Taipei&allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=dev123
+      # Redis 配置
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      # JPA 配置
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_JPA_SHOW_SQL=true
+      # Flyway 配置
+      - SPRING_FLYWAY_ENABLED=true
+      - SPRING_FLYWAY_LOCATIONS=classpath:db/migration
+      # JWT 配置 (base64 encoded 256-bit secret)
+      - JWT_SECRET=YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwYWJjZGVmZ2hpams=
+      # 安全白名單配置
+      - APP_SECURITY_WHITELIST=/api/v1/auth/**,/actuator/**,/swagger-ui/**,/swagger-ui.html,/api-docs/**,/v3/api-docs/**,/error
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - erp-network
+    restart: unless-stopped
+    # 健康檢查 - 檢查 Spring Boot Actuator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===========================================================================
+  # MySQL 8.4 資料庫
+  # ===========================================================================
+  mysql:
+    image: mysql:8.4
+    container_name: erp-mysql
+    ports:
+      - "3305:3306"
+    environment:
+      # MySQL 配置
+      - MYSQL_ROOT_PASSWORD=dev123
+      - MYSQL_DATABASE=springbootapi_demo_db
+      - MYSQL_ROOT_HOST=%
+      # 字元集配置
+      - MYSQL_CHARSET=utf8mb4
+      - MYSQL_COLLATION=utf8mb4_unicode_ci
+      # 時區配置
+      - TZ=Asia/Taipei
+    volumes:
+      # 資料持久化
+      - mysql-data:/var/lib/mysql
+      # 初始化腳本
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      # MySQL 配置檔
+      - ./docker/mysql/conf.d:/etc/mysql/conf.d
+    networks:
+      - erp-network
+    restart: unless-stopped
+    # 健康檢查
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pdev123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # MySQL 8.4 命令配置
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --sql-mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+
+  # ===========================================================================
+  # Redis 快取服務
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: erp-redis
+    ports:
+      - "6385:6379"
+    volumes:
+      # 資料持久化
+      - redis-data:/data
+    networks:
+      - erp-network
+    restart: unless-stopped
+    # 健康檢查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Redis 配置 - 開啟持久化
+    command: redis-server --appendonly yes
+
+# =============================================================================
+# 網路配置
+# =============================================================================
+networks:
+  erp-network:
+    driver: bridge
+
+# =============================================================================
+# 資料卷配置
+# =============================================================================
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local

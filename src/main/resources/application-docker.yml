@@ -1,0 +1,115 @@
+# =============================================================================
+# 零售業簡易ERP系統 - Docker 環境配置
+# =============================================================================
+# 本配置用於 Docker Compose 環境
+# 資料庫與 Redis 連線使用 Docker 服務名稱
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 資料庫配置
+# -----------------------------------------------------------------------------
+spring:
+  datasource:
+    # MySQL 連線 URL（使用 Docker 服務名稱）
+    url: jdbc:mysql://mysql:3306/springbootapi_demo_db?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Taipei&allowPublicKeyRetrieval=true&useSSL=false
+    # 使用者名稱
+    username: root
+    # 密碼
+    password: dev123
+    # 驅動程式
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # HikariCP 連線池配置
+    hikari:
+      pool-name: erp-hikari-pool
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+  # ---------------------------------------------------------------------------
+  # JPA 配置
+  # ---------------------------------------------------------------------------
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  # ---------------------------------------------------------------------------
+  # Flyway 配置
+  # ---------------------------------------------------------------------------
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history
+    validate-on-migrate: true
+    encoding: UTF-8
+
+  # ---------------------------------------------------------------------------
+  # Redis 配置（使用 Docker 服務名稱）
+  # ---------------------------------------------------------------------------
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password:
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+# -----------------------------------------------------------------------------
+# 日誌配置
+# -----------------------------------------------------------------------------
+logging:
+  level:
+    root: INFO
+    com.kamesan.erpapi: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.security: INFO
+  file:
+    name: /app/logs/erp-api.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# -----------------------------------------------------------------------------
+# 自訂配置
+# -----------------------------------------------------------------------------
+app:
+  # JWT 配置
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-for-jwt-token-signing-must-be-at-least-256-bits}
+    expiration: ${JWT_EXPIRATION:86400000}
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+    prefix: Bearer
+    header: Authorization
+
+  # CORS 配置
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+
+  # 分頁配置
+  pagination:
+    default-size: 20
+    max-size: 100
+
+  # 安全配置 (使用逗號分隔的字串，讓 Spring @Value 可以正確解析為 List)
+  security:
+    whitelist: /api/v1/auth/**,/actuator/**,/swagger-ui/**,/swagger-ui.html,/api-docs/**,/v3/api-docs/**,/error

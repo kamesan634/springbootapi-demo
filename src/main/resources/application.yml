@@ -1,0 +1,173 @@
+# =============================================================================
+# 零售業簡易ERP系統 - Spring Boot 主要配置
+# =============================================================================
+# 本配置為基礎配置，各環境的特定配置請參考：
+#   - application-dev.yml  (開發環境)
+#   - application-docker.yml (Docker 環境)
+#   - application-test.yml (測試環境)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 應用程式基本配置
+# -----------------------------------------------------------------------------
+spring:
+  application:
+    name: erp-api
+
+  # ---------------------------------------------------------------------------
+  # Profile 配置 - 預設使用開發環境
+  # ---------------------------------------------------------------------------
+  profiles:
+    active: dev
+
+  # ---------------------------------------------------------------------------
+  # Jackson JSON 配置
+  # ---------------------------------------------------------------------------
+  jackson:
+    # 日期格式
+    date-format: yyyy-MM-dd HH:mm:ss
+    # 時區
+    time-zone: Asia/Taipei
+    # 序列化設定
+    serialization:
+      # 日期不轉為時間戳
+      write-dates-as-timestamps: false
+      # 空物件不報錯
+      fail-on-empty-beans: false
+    # 反序列化設定
+    deserialization:
+      # 未知屬性不報錯
+      fail-on-unknown-properties: false
+
+  # ---------------------------------------------------------------------------
+  # Servlet 配置
+  # ---------------------------------------------------------------------------
+  servlet:
+    multipart:
+      # 單檔案最大大小
+      max-file-size: 10MB
+      # 請求最大大小
+      max-request-size: 20MB
+
+# -----------------------------------------------------------------------------
+# Server 配置
+# -----------------------------------------------------------------------------
+server:
+  # 應用程式埠
+  port: 8005
+  servlet:
+    # Context Path
+    context-path: /
+    # 編碼
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  # Tomcat 配置
+  tomcat:
+    # URI 編碼
+    uri-encoding: UTF-8
+    # 最大執行緒數
+    threads:
+      max: 200
+      min-spare: 10
+
+# -----------------------------------------------------------------------------
+# SpringDoc OpenAPI (Swagger) 配置
+# -----------------------------------------------------------------------------
+springdoc:
+  # Swagger UI 路徑
+  swagger-ui:
+    path: /swagger-ui.html
+    # 操作排序
+    operations-sorter: method
+    # 標籤排序
+    tags-sorter: alpha
+    # 預設展開
+    doc-expansion: none
+  # API Docs 路徑
+  api-docs:
+    path: /api-docs
+  # 顯示 Actuator 端點
+  show-actuator: true
+  # 掃描的套件
+  packages-to-scan: com.kamesan.erpapi
+  # 掃描的路徑
+  paths-to-match: /api/**
+
+# -----------------------------------------------------------------------------
+# Actuator 監控配置
+# -----------------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        # 暴露的端點
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      # 健康檢查詳細資訊
+      show-details: when-authorized
+  # 應用程式資訊
+  info:
+    env:
+      enabled: true
+
+# -----------------------------------------------------------------------------
+# 應用程式資訊
+# -----------------------------------------------------------------------------
+info:
+  app:
+    name: 零售業簡易ERP系統
+    description: Spring Boot RESTful API
+    version: 1.0.0
+
+# -----------------------------------------------------------------------------
+# 自訂配置
+# -----------------------------------------------------------------------------
+app:
+  # JWT 配置
+  jwt:
+    # 密鑰（正式環境應使用環境變數）
+    secret: ${JWT_SECRET:your-256-bit-secret-key-for-jwt-token-signing-must-be-at-least-256-bits}
+    # Token 有效期限（毫秒）- 預設 24 小時
+    expiration: ${JWT_EXPIRATION:86400000}
+    # Refresh Token 有效期限（毫秒）- 預設 7 天
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+    # Token 前綴
+    prefix: Bearer
+    # Header 名稱
+    header: Authorization
+
+  # CORS 配置
+  cors:
+    # 允許的來源
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+    # 允許的方法
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+    # 允許的標頭
+    allowed-headers: "*"
+    # 是否允許憑證
+    allow-credentials: true
+    # 預檢請求快取時間（秒）
+    max-age: 3600
+
+  # 分頁配置
+  pagination:
+    # 預設每頁筆數
+    default-size: 20
+    # 最大每頁筆數
+    max-size: 100
+
+  # 安全配置
+  security:
+    # 白名單路徑（不需要驗證）
+    whitelist:
+      - /api/v1/auth/**
+      - /actuator/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /api-docs/**
+      - /v3/api-docs/**
+      - /error

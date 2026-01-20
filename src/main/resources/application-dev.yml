@@ -1,0 +1,125 @@
+# =============================================================================
+# 零售業簡易ERP系統 - 開發環境配置
+# =============================================================================
+# 本配置為本機開發環境使用
+# 資料庫與 Redis 需要透過 Docker Compose 啟動
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 資料庫配置
+# -----------------------------------------------------------------------------
+spring:
+  datasource:
+    # MySQL 連線 URL
+    url: jdbc:mysql://localhost:3305/springbootapi_demo_db?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Taipei&allowPublicKeyRetrieval=true&useSSL=false
+    # 使用者名稱
+    username: root
+    # 密碼
+    password: dev123
+    # 驅動程式
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # HikariCP 連線池配置
+    hikari:
+      # 連線池名稱
+      pool-name: erp-hikari-pool
+      # 最小閒置連線
+      minimum-idle: 5
+      # 最大連線數
+      maximum-pool-size: 20
+      # 閒置連線逾時（毫秒）
+      idle-timeout: 300000
+      # 連線最大存活時間（毫秒）
+      max-lifetime: 1800000
+      # 連線逾時（毫秒）
+      connection-timeout: 30000
+
+  # ---------------------------------------------------------------------------
+  # JPA 配置
+  # ---------------------------------------------------------------------------
+  jpa:
+    # 資料庫平台
+    database-platform: org.hibernate.dialect.MySQLDialect
+    # 顯示 SQL
+    show-sql: true
+    # Hibernate 配置
+    hibernate:
+      # DDL 自動處理（開發環境使用 validate，由 Flyway 管理 schema）
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # 格式化 SQL
+        format_sql: true
+        # 使用 SQL 註解
+        use_sql_comments: true
+        # 批次處理大小
+        jdbc:
+          batch_size: 50
+        # 排序批次操作
+        order_inserts: true
+        order_updates: true
+
+  # ---------------------------------------------------------------------------
+  # Flyway 資料庫遷移配置
+  # ---------------------------------------------------------------------------
+  flyway:
+    # 啟用 Flyway
+    enabled: true
+    # 基準版本（首次遷移時使用）
+    baseline-on-migrate: true
+    # 遷移腳本位置
+    locations: classpath:db/migration
+    # 資料表名稱
+    table: flyway_schema_history
+    # 驗證遷移
+    validate-on-migrate: true
+    # 編碼
+    encoding: UTF-8
+
+  # ---------------------------------------------------------------------------
+  # Redis 配置
+  # ---------------------------------------------------------------------------
+  data:
+    redis:
+      # Redis 主機
+      host: localhost
+      # Redis 埠
+      port: 6385
+      # 密碼（開發環境無密碼）
+      password:
+      # 資料庫索引
+      database: 0
+      # 連線逾時
+      timeout: 10000ms
+      # Lettuce 連線池配置
+      lettuce:
+        pool:
+          # 最大連線數
+          max-active: 8
+          # 最大閒置連線
+          max-idle: 8
+          # 最小閒置連線
+          min-idle: 0
+          # 連線等待逾時
+          max-wait: -1ms
+
+# -----------------------------------------------------------------------------
+# 日誌配置
+# -----------------------------------------------------------------------------
+logging:
+  level:
+    # Root 日誌等級
+    root: INFO
+    # 應用程式日誌等級
+    com.kamesan.erpapi: DEBUG
+    # SQL 日誌
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # Spring Security 日誌
+    org.springframework.security: DEBUG
+  # 日誌檔案配置
+  file:
+    name: logs/erp-api.log
+  # 日誌模式
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

@@ -1,0 +1,2042 @@
+{
+	"info": {
+		"_postman_id": "erp-api-collection",
+		"name": "零售業 ERP API",
+		"description": "零售業簡易 ERP 系統 API Collection\n\n## 使用說明\n1. 先呼叫「登入」API 取得 Token\n2. Token 會自動儲存到環境變數 `accessToken`\n3. 其他 API 會自動帶入 Authorization Header",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8005",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "認證管理",
+			"item": [
+				{
+					"name": "登入",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.accessToken) {",
+									"    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);",
+									"    console.log('Token saved successfully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "使用帳號密碼登入，成功後回傳 JWT Token"
+					}
+				},
+				{
+					"name": "刷新 Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh?refreshToken={{refreshToken}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "refresh"],
+							"query": [
+								{
+									"key": "refreshToken",
+									"value": "{{refreshToken}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "登出",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					}
+				},
+				{
+					"name": "取得密碼政策",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/password-policy",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "password-policy"]
+						}
+					}
+				},
+				{
+					"name": "修改密碼",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/change-password?userId=1&oldPassword=oldPass&newPassword=newPass",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "change-password"],
+							"query": [
+								{"key": "userId", "value": "1"},
+								{"key": "oldPassword", "value": "oldPass"},
+								{"key": "newPassword", "value": "newPass"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "商品管理",
+			"item": [
+				{
+					"name": "建立商品",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sku\": \"PROD001\",\n    \"name\": \"測試商品\",\n    \"categoryId\": 1,\n    \"unitId\": 1,\n    \"taxTypeId\": 1,\n    \"costPrice\": 100.00,\n    \"sellingPrice\": 150.00,\n    \"barcode\": \"4710088888888\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products"]
+						}
+					}
+				},
+				{
+					"name": "查詢商品列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products?page=1&size=20&sortBy=createdAt&sortDir=desc&activeOnly=false",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "size", "value": "20"},
+								{"key": "sortBy", "value": "createdAt"},
+								{"key": "sortDir", "value": "desc"},
+								{"key": "activeOnly", "value": "false"}
+							]
+						}
+					}
+				},
+				{
+					"name": "根據 ID 查詢商品",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "1"]
+						}
+					}
+				},
+				{
+					"name": "根據 SKU 查詢商品",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/sku/PROD001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "sku", "PROD001"]
+						}
+					}
+				},
+				{
+					"name": "根據條碼查詢商品",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/barcode/4710088888888",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "barcode", "4710088888888"]
+						}
+					}
+				},
+				{
+					"name": "搜尋商品",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/search?keyword=測試&page=1&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "search"],
+							"query": [
+								{"key": "keyword", "value": "測試"},
+								{"key": "page", "value": "1"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "根據分類查詢商品",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/category/1?page=1&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "category", "1"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "更新商品",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"更新後的商品名稱\",\n    \"sellingPrice\": 180.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "1"]
+						}
+					}
+				},
+				{
+					"name": "刪除商品（軟刪除）",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "1"]
+						}
+					}
+				},
+				{
+					"name": "永久刪除商品",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/1/permanent",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "1", "permanent"]
+						}
+					}
+				},
+				{
+					"name": "匯出商品 Excel",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/export/excel?activeOnly=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "export", "excel"],
+							"query": [
+								{"key": "activeOnly", "value": "true"}
+							]
+						}
+					}
+				},
+				{
+					"name": "匯出商品 CSV",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/export/csv?activeOnly=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "export", "csv"],
+							"query": [
+								{"key": "activeOnly", "value": "true"}
+							]
+						}
+					}
+				},
+				{
+					"name": "下載匯入範本",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/products/import/template",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "products", "import", "template"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "商品分類",
+			"item": [
+				{
+					"name": "建立分類",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"CAT001\",\n    \"name\": \"飲料類\",\n    \"parentId\": null,\n    \"sortOrder\": 1,\n    \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories"]
+						}
+					}
+				},
+				{
+					"name": "查詢分類列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories?page=1&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "根據 ID 查詢分類",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "1"]
+						}
+					}
+				},
+				{
+					"name": "取得分類樹狀結構",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/tree",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "tree"]
+						}
+					}
+				},
+				{
+					"name": "取得子分類",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/1/children",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "1", "children"]
+						}
+					}
+				},
+				{
+					"name": "更新分類",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"更新後的分類名稱\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "1"]
+						}
+					}
+				},
+				{
+					"name": "刪除分類",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/categories/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "categories", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "會員管理",
+			"item": [
+				{
+					"name": "建立會員",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"王小明\",\n    \"phone\": \"0912345678\",\n    \"email\": \"wang@example.com\",\n    \"birthday\": \"1990-01-15\",\n    \"gender\": \"M\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers"]
+						}
+					}
+				},
+				{
+					"name": "查詢會員列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers?page=1&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "根據 ID 取得會員",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "1"]
+						}
+					}
+				},
+				{
+					"name": "根據會員編號取得會員",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/member-no/M202501060001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "member-no", "M202501060001"]
+						}
+					}
+				},
+				{
+					"name": "搜尋會員",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/search?keyword=王&page=1&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "search"],
+							"query": [
+								{"key": "keyword", "value": "王"},
+								{"key": "page", "value": "1"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "複合條件查詢會員",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/filter?levelId=1&active=true&page=1&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "filter"],
+							"query": [
+								{"key": "levelId", "value": "1"},
+								{"key": "active", "value": "true"},
+								{"key": "page", "value": "1"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "更新會員",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"王大明\",\n    \"email\": \"wang.updated@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "1"]
+						}
+					}
+				},
+				{
+					"name": "刪除會員",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "1"]
+						}
+					}
+				},
+				{
+					"name": "增加會員點數",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/1/points/add?points=100&reason=消費回饋",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "1", "points", "add"],
+							"query": [
+								{"key": "points", "value": "100"},
+								{"key": "reason", "value": "消費回饋"}
+							]
+						}
+					}
+				},
+				{
+					"name": "扣除會員點數",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/1/points/deduct?points=50&reason=點數兌換",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "1", "points", "deduct"],
+							"query": [
+								{"key": "points", "value": "50"},
+								{"key": "reason", "value": "點數兌換"}
+							]
+						}
+					}
+				},
+				{
+					"name": "計算消費可獲得的點數",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/1/points/calculate?spentAmount=1000",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "1", "points", "calculate"],
+							"query": [
+								{"key": "spentAmount", "value": "1000"}
+							]
+						}
+					}
+				},
+				{
+					"name": "記錄會員消費",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/1/spending?spentAmount=1500",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "1", "spending"],
+							"query": [
+								{"key": "spentAmount", "value": "1500"}
+							]
+						}
+					}
+				},
+				{
+					"name": "查詢今日壽星",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/birthday/today",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "birthday", "today"]
+						}
+					}
+				},
+				{
+					"name": "查詢本月壽星",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/birthday/month",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "birthday", "month"]
+						}
+					}
+				},
+				{
+					"name": "取得會員統計資訊",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/statistics",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "statistics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "RFM 分析",
+			"item": [
+				{
+					"name": "執行 RFM 分析",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/rfm/analyze?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "rfm", "analyze"],
+							"query": [
+								{"key": "startDate", "value": "2024-01-01"},
+								{"key": "endDate", "value": "2024-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "執行最近一年 RFM 分析",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customers/rfm/analyze/last-year",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "customers", "rfm", "analyze", "last-year"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "訂單管理",
+			"item": [
+				{
+					"name": "建立訂單",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"storeId\": 1,\n    \"customerId\": 1,\n    \"items\": [\n        {\n            \"productId\": 1,\n            \"quantity\": 2,\n            \"unitPrice\": 150.00\n        }\n    ],\n    \"notes\": \"測試訂單\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders"]
+						}
+					}
+				},
+				{
+					"name": "查詢訂單列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "根據 ID 查詢訂單",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "1"]
+						}
+					}
+				},
+				{
+					"name": "根據訂單編號查詢",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/by-order-no/ORD202501010001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "by-order-no", "ORD202501010001"]
+						}
+					}
+				},
+				{
+					"name": "根據門市查詢訂單",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/store/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "store", "1"]
+						}
+					}
+				},
+				{
+					"name": "根據客戶查詢訂單",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/customer/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "customer", "1"]
+						}
+					}
+				},
+				{
+					"name": "根據狀態查詢訂單",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/status/PENDING",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "status", "PENDING"]
+						}
+					}
+				},
+				{
+					"name": "更新訂單",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"更新後的備註\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "1"]
+						}
+					}
+				},
+				{
+					"name": "刪除訂單",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "1"]
+						}
+					}
+				},
+				{
+					"name": "取消訂單",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/1/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "1", "cancel"]
+						}
+					}
+				},
+				{
+					"name": "申請退款",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/1/refund",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "1", "refund"]
+						}
+					}
+				},
+				{
+					"name": "查詢訂單付款記錄",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/1/payments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "orders", "1", "payments"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "退貨單",
+			"item": [
+				{
+					"name": "建立退貨單",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": 1,\n    \"storeId\": 1,\n    \"reason\": \"商品瑕疵\",\n    \"items\": [\n        {\n            \"orderItemId\": 1,\n            \"quantity\": 1,\n            \"reason\": \"商品瑕疵\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/refunds",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "refunds"]
+						}
+					}
+				},
+				{
+					"name": "查詢退貨單",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/refunds/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "refunds", "1"]
+						}
+					}
+				},
+				{
+					"name": "查詢退貨單列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/refunds?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "refunds"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "核准退貨單",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approvedBy\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/refunds/1/approve",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "refunds", "1", "approve"]
+						}
+					}
+				},
+				{
+					"name": "完成退貨",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"operatorId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/refunds/1/complete",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "refunds", "1", "complete"]
+						}
+					}
+				},
+				{
+					"name": "拒絕退貨",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"超過退貨期限\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/refunds/1/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "refunds", "1", "reject"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "收銀班次",
+			"item": [
+				{
+					"name": "開班",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"storeId\": 1,\n    \"cashierId\": 1,\n    \"openingAmount\": 5000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cashier-shifts/open",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cashier-shifts", "open"]
+						}
+					}
+				},
+				{
+					"name": "結班",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"closingAmount\": 15000.00,\n    \"notes\": \"今日結班備註\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cashier-shifts/1/close",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cashier-shifts", "1", "close"]
+						}
+					}
+				},
+				{
+					"name": "查詢班次",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cashier-shifts/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cashier-shifts", "1"]
+						}
+					}
+				},
+				{
+					"name": "查詢目前班次",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cashier-shifts/current/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cashier-shifts", "current", "1"]
+						}
+					}
+				},
+				{
+					"name": "查詢班次列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/cashier-shifts?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "cashier-shifts"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "20"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "庫存管理",
+			"item": [
+				{
+					"name": "查詢庫存",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory?productId=1&warehouseId=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory"],
+							"query": [
+								{"key": "productId", "value": "1"},
+								{"key": "warehouseId", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "查詢商品所有庫存",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/product/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "product", "1"]
+						}
+					}
+				},
+				{
+					"name": "查詢倉庫庫存",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/warehouse/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "warehouse", "1"]
+						}
+					}
+				},
+				{
+					"name": "查詢商品總庫存",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/product/1/total",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "product", "1", "total"]
+						}
+					}
+				},
+				{
+					"name": "查詢商品可用庫存",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/product/1/available",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "product", "1", "available"]
+						}
+					}
+				},
+				{
+					"name": "低庫存預警",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/low-stock?threshold=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "low-stock"],
+							"query": [
+								{"key": "threshold", "value": "10"}
+							]
+						}
+					}
+				},
+				{
+					"name": "庫存調整",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": 1,\n    \"warehouseId\": 1,\n    \"adjustmentType\": \"GAIN\",\n    \"quantity\": 10,\n    \"reason\": \"盤點盤盈\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/adjust",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "adjust"]
+						}
+					}
+				},
+				{
+					"name": "查詢商品異動記錄",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/movements/product/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "movements", "product", "1"]
+						}
+					}
+				},
+				{
+					"name": "查詢倉庫異動記錄",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/movements/warehouse/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "movements", "warehouse", "1"]
+						}
+					}
+				},
+				{
+					"name": "取得異動類型列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/inventory/movement-types",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "inventory", "movement-types"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "供應商管理",
+			"item": [
+				{
+					"name": "新增供應商",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SUP001\",\n    \"name\": \"優質材料供應有限公司\",\n    \"contactPerson\": \"王小明\",\n    \"phone\": \"02-12345678\",\n    \"email\": \"contact@supplier.com\",\n    \"address\": \"台北市中山區民生東路100號\",\n    \"paymentTerms\": \"月結30天\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers"]
+						}
+					}
+				},
+				{
+					"name": "查詢所有供應商",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers?page=0&size=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers"],
+							"query": [
+								{"key": "page", "value": "0"},
+								{"key": "size", "value": "10"}
+							]
+						}
+					}
+				},
+				{
+					"name": "根據 ID 查詢供應商",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers", "1"]
+						}
+					}
+				},
+				{
+					"name": "查詢啟用中的供應商",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers", "active"]
+						}
+					}
+				},
+				{
+					"name": "搜尋供應商",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers/search?keyword=優質",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers", "search"],
+							"query": [
+								{"key": "keyword", "value": "優質"}
+							]
+						}
+					}
+				},
+				{
+					"name": "更新供應商",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"更新後的供應商名稱\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers", "1"]
+						}
+					}
+				},
+				{
+					"name": "刪除供應商",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers", "1"]
+						}
+					}
+				},
+				{
+					"name": "切換供應商狀態",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers/1/toggle-status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers", "1", "toggle-status"]
+						}
+					}
+				},
+				{
+					"name": "統計供應商數量",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/suppliers/stats/count",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "suppliers", "stats", "count"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "促銷活動",
+			"item": [
+				{
+					"name": "建立促銷活動",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"夏季特賣\",\n    \"description\": \"全館商品8折\",\n    \"type\": \"DISCOUNT\",\n    \"discountType\": \"PERCENTAGE\",\n    \"discountValue\": 20,\n    \"startDate\": \"2024-06-01\",\n    \"endDate\": \"2024-08-31\",\n    \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions"]
+						}
+					}
+				},
+				{
+					"name": "查詢所有促銷活動",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions"]
+						}
+					}
+				},
+				{
+					"name": "根據 ID 查詢促銷活動",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "1"]
+						}
+					}
+				},
+				{
+					"name": "取得進行中的促銷活動",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/ongoing",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "ongoing"]
+						}
+					}
+				},
+				{
+					"name": "取得即將開始的促銷活動",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/upcoming",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "upcoming"]
+						}
+					}
+				},
+				{
+					"name": "搜尋促銷活動",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/search?keyword=夏季",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "search"],
+							"query": [
+								{"key": "keyword", "value": "夏季"}
+							]
+						}
+					}
+				},
+				{
+					"name": "更新促銷活動",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"更新後的促銷名稱\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "1"]
+						}
+					}
+				},
+				{
+					"name": "刪除促銷活動",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "1"]
+						}
+					}
+				},
+				{
+					"name": "啟用促銷活動",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/1/activate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "1", "activate"]
+						}
+					}
+				},
+				{
+					"name": "停用促銷活動",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/1/deactivate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "1", "deactivate"]
+						}
+					}
+				},
+				{
+					"name": "計算折扣金額",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/promotions/1/calculate?originalAmount=1000",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "promotions", "1", "calculate"],
+							"query": [
+								{"key": "originalAmount", "value": "1000"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "優惠券",
+			"item": [
+				{
+					"name": "建立優惠券",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SAVE100\",\n    \"name\": \"滿千折百\",\n    \"discountType\": \"FIXED\",\n    \"discountValue\": 100,\n    \"minOrderAmount\": 1000,\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-12-31\",\n    \"maxUsageCount\": 1000,\n    \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons"]
+						}
+					}
+				},
+				{
+					"name": "查詢所有優惠券",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons"]
+						}
+					}
+				},
+				{
+					"name": "根據優惠碼查詢",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/code/SAVE100",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "code", "SAVE100"]
+						}
+					}
+				},
+				{
+					"name": "取得有效的優惠券",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/valid",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "valid"]
+						}
+					}
+				},
+				{
+					"name": "驗證優惠券",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/validate?code=SAVE100&orderAmount=1500",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "validate"],
+							"query": [
+								{"key": "code", "value": "SAVE100"},
+								{"key": "orderAmount", "value": "1500"}
+							]
+						}
+					}
+				},
+				{
+					"name": "使用優惠券",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/use?code=SAVE100&orderAmount=1500",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "use"],
+							"query": [
+								{"key": "code", "value": "SAVE100"},
+								{"key": "orderAmount", "value": "1500"}
+							]
+						}
+					}
+				},
+				{
+					"name": "計算優惠券折扣",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/coupons/calculate?code=SAVE100&orderAmount=1500",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "coupons", "calculate"],
+							"query": [
+								{"key": "code", "value": "SAVE100"},
+								{"key": "orderAmount", "value": "1500"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "報表",
+			"item": [
+				{
+					"name": "取得儀表板",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "取得銷售報表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/sales?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "sales"],
+							"query": [
+								{"key": "startDate", "value": "2024-01-01"},
+								{"key": "endDate", "value": "2024-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "取得庫存報表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/inventory",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "inventory"]
+						}
+					}
+				},
+				{
+					"name": "取得採購報表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/purchasing?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "purchasing"],
+							"query": [
+								{"key": "startDate", "value": "2024-01-01"},
+								{"key": "endDate", "value": "2024-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "取得每日銷售",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/sales/daily?date=2024-01-15",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "sales", "daily"],
+							"query": [
+								{"key": "date", "value": "2024-01-15"}
+							]
+						}
+					}
+				},
+				{
+					"name": "取得月度銷售",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/sales/monthly?year=2024&month=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "sales", "monthly"],
+							"query": [
+								{"key": "year", "value": "2024"},
+								{"key": "month", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "匯出銷售報表 Excel",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/sales/export/excel?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "sales", "export", "excel"],
+							"query": [
+								{"key": "startDate", "value": "2024-01-01"},
+								{"key": "endDate", "value": "2024-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "匯出銷售報表 CSV",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/sales/export/csv?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "sales", "export", "csv"],
+							"query": [
+								{"key": "startDate", "value": "2024-01-01"},
+								{"key": "endDate", "value": "2024-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "匯出銷售報表 PDF",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/sales/export/pdf?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "sales", "export", "pdf"],
+							"query": [
+								{"key": "startDate", "value": "2024-01-01"},
+								{"key": "endDate", "value": "2024-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "取得利潤分析",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/profit-analysis?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "profit-analysis"],
+							"query": [
+								{"key": "startDate", "value": "2024-01-01"},
+								{"key": "endDate", "value": "2024-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "年對年比較 (YoY)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/comparison/yoy?year=2024&month=6",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "comparison", "yoy"],
+							"query": [
+								{"key": "year", "value": "2024"},
+								{"key": "month", "value": "6"}
+							]
+						}
+					}
+				},
+				{
+					"name": "月對月比較 (MoM)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/comparison/mom?year=2024&month=6",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "comparison", "mom"],
+							"query": [
+								{"key": "year", "value": "2024"},
+								{"key": "month", "value": "6"}
+							]
+						}
+					}
+				},
+				{
+					"name": "自訂期間比較",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/reports/comparison/custom?currentStart=2024-01-01&currentEnd=2024-06-30&previousStart=2023-01-01&previousEnd=2023-06-30",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "reports", "comparison", "custom"],
+							"query": [
+								{"key": "currentStart", "value": "2024-01-01"},
+								{"key": "currentEnd", "value": "2024-06-30"},
+								{"key": "previousStart", "value": "2023-01-01"},
+								{"key": "previousEnd", "value": "2023-06-30"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "系統參數",
+			"item": [
+				{
+					"name": "取得所有參數",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/system-parameters",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "system-parameters"]
+						}
+					}
+				},
+				{
+					"name": "根據類別取得參數",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/system-parameters/category/GENERAL",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "system-parameters", "category", "GENERAL"]
+						}
+					}
+				},
+				{
+					"name": "取得參數值",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/system-parameters/GENERAL/company_name",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "system-parameters", "GENERAL", "company_name"]
+						}
+					}
+				},
+				{
+					"name": "新增參數",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"category\": \"CUSTOM\",\n    \"paramKey\": \"custom_param\",\n    \"paramValue\": \"custom_value\",\n    \"description\": \"自訂參數\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/system-parameters",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "system-parameters"]
+						}
+					}
+				},
+				{
+					"name": "更新參數值",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"value\": \"new_value\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/system-parameters/GENERAL/company_name",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "system-parameters", "GENERAL", "company_name"]
+						}
+					}
+				},
+				{
+					"name": "刪除參數",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/system-parameters/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "system-parameters", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "在線使用者",
+			"item": [
+				{
+					"name": "取得在線使用者列表",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/online-users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "online-users"]
+						},
+						"description": "取得目前所有在線使用者的資訊（需要 ADMIN 或 MANAGER 權限）"
+					}
+				},
+				{
+					"name": "取得在線人數統計",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/online-users/count",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "online-users", "count"]
+						},
+						"description": "取得目前在線人數及各門市在線人數統計"
+					}
+				},
+				{
+					"name": "檢查使用者是否在線",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/online-users/1/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "online-users", "1", "status"]
+						},
+						"description": "檢查指定使用者是否目前在線"
+					}
+				},
+				{
+					"name": "使用者心跳",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/online-users/1/heartbeat",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "online-users", "1", "heartbeat"]
+						},
+						"description": "更新使用者最後活動時間，保持在線狀態（前端應定期呼叫）"
+					}
+				}
+			]
+		},
+		{
+			"name": "Redis 管理",
+			"item": [
+				{
+					"name": "取得 Redis 總覽",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/overview",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "overview"]
+						},
+						"description": "取得快取統計、黑名單數量、佇列狀態等總覽資訊（需要 ADMIN 權限）"
+					}
+				},
+				{
+					"name": "取得快取統計",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/cache/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "cache", "stats"]
+						},
+						"description": "取得快取命中率等統計資訊"
+					}
+				},
+				{
+					"name": "重置快取統計",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/cache/stats/reset",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "cache", "stats", "reset"]
+						},
+						"description": "重置快取命中率統計資訊"
+					}
+				},
+				{
+					"name": "清除快取",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/cache?pattern=product:*",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "cache"],
+							"query": [
+								{"key": "pattern", "value": "product:*"}
+							]
+						},
+						"description": "清除符合指定模式的快取"
+					}
+				},
+				{
+					"name": "取得佇列統計",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/queue/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "queue", "stats"]
+						},
+						"description": "取得審計紀錄佇列的統計資訊"
+					}
+				},
+				{
+					"name": "清空失敗佇列",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/queue/failed",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "queue", "failed"]
+						},
+						"description": "清空審計紀錄的失敗佇列"
+					}
+				},
+				{
+					"name": "重試失敗佇列",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/queue/failed/retry",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "queue", "failed", "retry"]
+						},
+						"description": "將失敗佇列中的紀錄重新入隊處理"
+					}
+				},
+				{
+					"name": "取得黑名單數量",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/redis/blacklist/count",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "redis", "blacklist", "count"]
+						},
+						"description": "取得 Token 黑名單中的數量"
+					}
+				}
+			]
+		}
+	]
+}
