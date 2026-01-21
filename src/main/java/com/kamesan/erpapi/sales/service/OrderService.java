@@ -1,6 +1,9 @@
 package com.kamesan.erpapi.sales.service;
 
+import com.kamesan.erpapi.accounts.repository.StoreRepository;
 import com.kamesan.erpapi.common.exception.BusinessException;
+import com.kamesan.erpapi.customers.repository.CustomerRepository;
+import com.kamesan.erpapi.products.repository.ProductRepository;
 import com.kamesan.erpapi.sales.dto.*;
 import com.kamesan.erpapi.sales.entity.*;
 import com.kamesan.erpapi.sales.repository.OrderItemRepository;
@@ -64,6 +67,21 @@ public class OrderService {
      * 付款記錄 Repository
      */
     private final PaymentRepository paymentRepository;
+
+    /**
+     * 門市 Repository
+     */
+    private final StoreRepository storeRepository;
+
+    /**
+     * 客戶 Repository
+     */
+    private final CustomerRepository customerRepository;
+
+    /**
+     * 商品 Repository
+     */
+    private final ProductRepository productRepository;
 
     /**
      * 訂單編號流水號計數器
@@ -579,11 +597,29 @@ public class OrderService {
             orderDateTime = LocalDateTime.of(order.getOrderDate(), time);
         }
 
+        // 查詢門市名稱
+        String storeName = null;
+        if (order.getStoreId() != null) {
+            storeName = storeRepository.findById(order.getStoreId())
+                    .map(store -> store.getName())
+                    .orElse(null);
+        }
+
+        // 查詢客戶名稱
+        String customerName = null;
+        if (order.getCustomerId() != null) {
+            customerName = customerRepository.findById(order.getCustomerId())
+                    .map(customer -> customer.getName())
+                    .orElse(null);
+        }
+
         return OrderDto.builder()
                 .id(order.getId())
                 .orderNo(order.getOrderNo())
                 .storeId(order.getStoreId())
+                .storeName(storeName)
                 .customerId(order.getCustomerId())
+                .customerName(customerName)
                 .orderDate(orderDateTime)
                 .subtotal(order.getSubtotal())
                 .discountAmount(order.getDiscountAmount())
@@ -608,10 +644,23 @@ public class OrderService {
      * @return 訂單明細 DTO
      */
     private OrderItemDto convertOrderItemToDto(OrderItem item) {
+        // 查詢商品資訊
+        String productCode = null;
+        String productName = null;
+        if (item.getProductId() != null) {
+            var product = productRepository.findById(item.getProductId()).orElse(null);
+            if (product != null) {
+                productCode = product.getSku();
+                productName = product.getName();
+            }
+        }
+
         return OrderItemDto.builder()
                 .id(item.getId())
                 .orderId(item.getOrder() != null ? item.getOrder().getId() : null)
                 .productId(item.getProductId())
+                .productCode(productCode)
+                .productName(productName)
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .discountAmount(item.getDiscountAmount())

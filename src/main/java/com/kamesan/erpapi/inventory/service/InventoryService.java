@@ -100,7 +100,7 @@ public class InventoryService {
                 .orElseThrow(() -> BusinessException.notFound("庫存記錄",
                         String.format("productId=%d, warehouseId=%d", productId, warehouseId)));
 
-        return InventoryDto.fromEntity(inventory);
+        return convertToDto(inventory);
     }
 
     /**
@@ -114,7 +114,7 @@ public class InventoryService {
         log.debug("查詢商品所有倉庫庫存: productId={}", productId);
 
         return inventoryRepository.findByProductId(productId).stream()
-                .map(InventoryDto::fromEntity)
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
@@ -129,7 +129,7 @@ public class InventoryService {
         log.debug("分頁查詢所有庫存");
 
         return inventoryRepository.findAll(pageable)
-                .map(InventoryDto::fromEntity);
+                .map(this::convertToDto);
     }
 
     /**
@@ -144,7 +144,7 @@ public class InventoryService {
         log.debug("分頁查詢倉庫庫存: warehouseId={}", warehouseId);
 
         return inventoryRepository.findByWarehouseId(warehouseId, pageable)
-                .map(InventoryDto::fromEntity);
+                .map(this::convertToDto);
     }
 
     /**
@@ -181,7 +181,7 @@ public class InventoryService {
         log.debug("查詢低庫存預警: threshold={}", threshold);
 
         return inventoryRepository.findLowStockInventories(threshold, pageable)
-                .map(InventoryDto::fromEntity);
+                .map(this::convertToDto);
     }
 
     // ==================== 庫存調整 ====================
@@ -247,7 +247,7 @@ public class InventoryService {
                 request.getProductId(), request.getWarehouseId(),
                 beforeQuantity, inventory.getQuantity());
 
-        return InventoryDto.fromEntity(inventory);
+        return convertToDto(inventory);
     }
 
     // ==================== 庫存異動（內部使用）====================
@@ -310,7 +310,7 @@ public class InventoryService {
         log.info("庫存異動完成: productId={}, warehouseId={}, type={}, before={}, after={}",
                 productId, warehouseId, movementType, beforeQuantity, inventory.getQuantity());
 
-        return InventoryDto.fromEntity(inventory);
+        return convertToDto(inventory);
     }
 
     // ==================== 庫存預留 ====================
@@ -551,6 +551,39 @@ public class InventoryService {
     }
 
     // ==================== 私有方法 ====================
+
+    /**
+     * 轉換庫存實體為 DTO（含商品和倉庫名稱）
+     *
+     * @param inventory 庫存實體
+     * @return 庫存 DTO
+     */
+    private InventoryDto convertToDto(Inventory inventory) {
+        if (inventory == null) {
+            return null;
+        }
+
+        // 查詢商品資訊
+        String productName = null;
+        String productCode = null;
+        if (inventory.getProductId() != null) {
+            var product = productRepository.findById(inventory.getProductId()).orElse(null);
+            if (product != null) {
+                productName = product.getName();
+                productCode = product.getSku();
+            }
+        }
+
+        // 查詢倉庫名稱
+        String warehouseName = null;
+        if (inventory.getWarehouseId() != null) {
+            warehouseName = storeRepository.findById(inventory.getWarehouseId())
+                    .map(Store::getName)
+                    .orElse(null);
+        }
+
+        return InventoryDto.fromEntity(inventory, productName, productCode, warehouseName);
+    }
 
     /**
      * 取得或建立庫存記錄（使用悲觀鎖定）
