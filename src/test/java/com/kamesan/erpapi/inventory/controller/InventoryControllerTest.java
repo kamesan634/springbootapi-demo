@@ -345,13 +345,13 @@ class InventoryControllerTest extends BaseIntegrationTest {
         @DisplayName("複合條件搜尋應返回結果")
         void searchMovements_ShouldReturnMovements() throws Exception {
             String token = generateAdminToken();
-            String startTime = java.time.LocalDateTime.now().minusDays(30).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            String endTime = java.time.LocalDateTime.now().plusDays(1).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            String startDate = java.time.LocalDate.now().minusDays(30).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+            String endDate = java.time.LocalDate.now().plusDays(1).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
 
             mockMvc.perform(get(INVENTORIES_API + "/movements/search")
                             .header("Authorization", bearerToken(token))
-                            .param("startTime", startTime)
-                            .param("endTime", endTime))
+                            .param("startDate", startDate)
+                            .param("endDate", endDate))
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true));
