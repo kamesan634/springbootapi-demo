@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -189,4 +190,20 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
      * @return 是否有銷售記錄
      */
     boolean existsByProductId(Long productId);
+
+    /**
+     * 查詢商品銷售統計（用於利潤分析）
+     *
+     * @param startDate 開始日期
+     * @param endDate   結束日期
+     * @return 商品 ID、銷售數量、銷售金額的列表
+     */
+    @Query("SELECT oi.productId, SUM(oi.quantity), SUM(oi.subtotal) " +
+            "FROM OrderItem oi JOIN oi.order o " +
+            "WHERE o.status = 'PAID' " +
+            "AND o.orderDate BETWEEN :startDate AND :endDate " +
+            "GROUP BY oi.productId")
+    List<Object[]> findProductSalesByDateRange(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

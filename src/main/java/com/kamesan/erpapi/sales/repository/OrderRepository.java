@@ -327,4 +327,32 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("customerId") Long customerId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    /**
+     * 統計指定狀態的訂單數量
+     *
+     * @param status    訂單狀態
+     * @param startDate 開始日期
+     * @param endDate   結束日期
+     * @return 訂單數量
+     */
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status AND o.orderDate BETWEEN :startDate AND :endDate")
+    Long countByStatusAndDateRange(
+            @Param("status") OrderStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    /**
+     * 按日期彙總退款金額
+     *
+     * @param startDate 開始日期
+     * @param endDate   結束日期
+     * @return 日期和退款額列表 [日期, 退款額, 退款數]
+     */
+    @Query("SELECT o.orderDate, COALESCE(SUM(o.totalAmount), 0), COUNT(o) " +
+           "FROM Order o WHERE o.status = 'REFUNDED' AND o.orderDate BETWEEN :startDate AND :endDate " +
+           "GROUP BY o.orderDate ORDER BY o.orderDate")
+    List<Object[]> sumRefundsByDateRange(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

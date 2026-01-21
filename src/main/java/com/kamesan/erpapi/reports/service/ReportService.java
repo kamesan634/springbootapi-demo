@@ -138,28 +138,71 @@ public class ReportService {
     public SalesReportDto getSalesReport(LocalDate startDate, LocalDate endDate, Long storeId) {
         log.debug("取得銷售報表，期間: {} ~ {}, 門市: {}", startDate, endDate, storeId);
 
-        // 計算總銷售額（簡化版本）
-        BigDecimal totalSales = BigDecimal.ZERO;
-        BigDecimal totalRefunds = BigDecimal.ZERO;
-        Integer orderCount = 0;
-        Integer refundCount = 0;
+        // 查詢總銷售額（已付款訂單）
+        BigDecimal totalSales = orderRepository.sumTotalAmountByStatusAndDateRange(
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, startDate, endDate);
+        if (totalSales == null) totalSales = BigDecimal.ZERO;
 
-        // 每日銷售明細
+        // 查詢總退款額（已退款訂單）
+        BigDecimal totalRefunds = orderRepository.sumTotalAmountByStatusAndDateRange(
+                com.kamesan.erpapi.sales.entity.OrderStatus.REFUNDED, startDate, endDate);
+        if (totalRefunds == null) totalRefunds = BigDecimal.ZERO;
+
+        // 查詢訂單數量
+        Long paidCount = orderRepository.countByStatusAndDateRange(
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, startDate, endDate);
+        Integer orderCount = paidCount != null ? paidCount.intValue() : 0;
+
+        // 查詢退款訂單數量
+        Long refundedCount = orderRepository.countByStatusAndDateRange(
+                com.kamesan.erpapi.sales.entity.OrderStatus.REFUNDED, startDate, endDate);
+        Integer refundCount = refundedCount != null ? refundedCount.intValue() : 0;
+
+        // 查詢每日銷售資料
+        List<Object[]> salesData = orderRepository.sumSalesByDateRange(startDate, endDate);
+        java.util.Map<LocalDate, BigDecimal> salesByDate = new java.util.HashMap<>();
+        java.util.Map<LocalDate, Integer> orderCountByDate = new java.util.HashMap<>();
+        for (Object[] row : salesData) {
+            LocalDate date = (LocalDate) row[0];
+            BigDecimal sales = row[1] != null ? (BigDecimal) row[1] : BigDecimal.ZERO;
+            Long count = row[2] != null ? (Long) row[2] : 0L;
+            salesByDate.put(date, sales);
+            orderCountByDate.put(date, count.intValue());
+        }
+
+        // 查詢每日退款資料
+        List<Object[]> refundsData = orderRepository.sumRefundsByDateRange(startDate, endDate);
+        java.util.Map<LocalDate, BigDecimal> refundsByDate = new java.util.HashMap<>();
+        java.util.Map<LocalDate, Integer> refundCountByDate = new java.util.HashMap<>();
+        for (Object[] row : refundsData) {
+            LocalDate date = (LocalDate) row[0];
+            BigDecimal refunds = row[1] != null ? (BigDecimal) row[1] : BigDecimal.ZERO;
+            Long count = row[2] != null ? (Long) row[2] : 0L;
+            refundsByDate.put(date, refunds);
+            refundCountByDate.put(date, count.intValue());
+        }
+
+        // 建立每日銷售明細
         List<SalesReportDto.DailySales> dailySales = new ArrayList<>();
         LocalDate current = startDate;
         while (!current.isAfter(endDate)) {
+            BigDecimal daySales = salesByDate.getOrDefault(current, BigDecimal.ZERO);
+            BigDecimal dayRefunds = refundsByDate.getOrDefault(current, BigDecimal.ZERO);
+            int dayOrderCount = orderCountByDate.getOrDefault(current, 0);
+            int dayRefundCount = refundCountByDate.getOrDefault(current, 0);
+
             dailySales.add(SalesReportDto.DailySales.builder()
                     .date(current)
-                    .sales(BigDecimal.ZERO)
-                    .refunds(BigDecimal.ZERO)
-                    .netSales(BigDecimal.ZERO)
-                    .orderCount(0)
-                    .refundCount(0)
+                    .sales(daySales)
+                    .refunds(dayRefunds)
+                    .netSales(daySales.subtract(dayRefunds))
+                    .orderCount(dayOrderCount)
+                    .refundCount(dayRefundCount)
                     .build());
             current = current.plusDays(1);
         }
 
-        // 付款方式統計
+        // 付款方式統計（暫時使用預設值，後續可擴充實際查詢）
         List<SalesReportDto.PaymentMethodSummary> paymentMethods = List.of(
                 SalesReportDto.PaymentMethodSummary.builder()
                         .paymentMethod("現金")
@@ -180,6 +223,14 @@ public class ReportService {
                 totalSales.divide(BigDecimal.valueOf(orderCount), 2, RoundingMode.HALF_UP) :
                 BigDecimal.ZERO;
 
+        // 計算毛利（簡化版：假設成本為銷售額的 60%）
+        BigDecimal estimatedCostRatio = new BigDecimal("0.60");
+        BigDecimal totalCost = totalSales.multiply(estimatedCostRatio);
+        BigDecimal grossProfit = totalSales.subtract(totalCost);
+        BigDecimal profitMargin = totalSales.compareTo(BigDecimal.ZERO) > 0 ?
+                grossProfit.multiply(BigDecimal.valueOf(100)).divide(totalSales, 2, RoundingMode.HALF_UP) :
+                BigDecimal.ZERO;
+
         return SalesReportDto.builder()
                 .startDate(startDate)
                 .endDate(endDate)
@@ -190,8 +241,8 @@ public class ReportService {
                 .orderCount(orderCount)
                 .refundCount(refundCount)
                 .avgOrderAmount(avgOrderAmount)
-                .grossProfit(BigDecimal.ZERO)
-                .profitMargin(BigDecimal.ZERO)
+                .grossProfit(grossProfit)
+                .profitMargin(profitMargin)
                 .dailySales(dailySales)
                 .paymentMethods(paymentMethods)
                 .hourlySales(new ArrayList<>())
@@ -258,27 +309,128 @@ public class ReportService {
     public ProfitAnalysisDto getProfitAnalysis(LocalDate startDate, LocalDate endDate, Long storeId) {
         log.debug("取得利潤分析，期間: {} ~ {}, 門市: {}", startDate, endDate, storeId);
 
-        // 取得銷售總額
-        BigDecimal totalRevenue = orderRepository.sumTotalAmountByStatusAndDateRange(
-                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, startDate, endDate);
-        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+        // 查詢商品銷售統計
+        List<Object[]> productSales = orderItemRepository.findProductSalesByDateRange(startDate, endDate);
+
+        // 建立商品利潤列表
+        List<ProfitAnalysisDto.ProductProfit> allProductProfits = new ArrayList<>();
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalCost = BigDecimal.ZERO;
+
+        // 類別利潤統計用的 Map
+        java.util.Map<Long, ProfitAnalysisDto.CategoryProfit> categoryProfitMap = new java.util.HashMap<>();
+
+        for (Object[] row : productSales) {
+            Long productId = (Long) row[0];
+            Long quantitySold = (Long) row[1];
+            BigDecimal revenue = (BigDecimal) row[2];
+
+            // 查詢商品資訊
+            var productOpt = productRepository.findById(productId);
+            if (productOpt.isEmpty()) continue;
+
+            var product = productOpt.get();
+            BigDecimal costPrice = product.getCostPrice() != null ? product.getCostPrice() : BigDecimal.ZERO;
+            BigDecimal cost = costPrice.multiply(BigDecimal.valueOf(quantitySold));
+            BigDecimal profit = revenue.subtract(cost);
+            BigDecimal profitMargin = revenue.compareTo(BigDecimal.ZERO) > 0 ?
+                    profit.multiply(BigDecimal.valueOf(100)).divide(revenue, 2, RoundingMode.HALF_UP) :
+                    BigDecimal.ZERO;
+
+            // 取得類別名稱
+            String categoryName = product.getCategory() != null ? product.getCategory().getName() : "未分類";
+            Long categoryId = product.getCategory() != null ? product.getCategory().getId() : 0L;
+
+            // 加入商品利潤列表
+            allProductProfits.add(ProfitAnalysisDto.ProductProfit.builder()
+                    .productId(productId)
+                    .productSku(product.getSku())
+                    .productName(product.getName())
+                    .categoryName(categoryName)
+                    .quantitySold(quantitySold.intValue())
+                    .revenue(revenue)
+                    .cost(cost)
+                    .grossProfit(profit)
+                    .profitMargin(profitMargin)
+                    .contributionRatio(BigDecimal.ZERO) // 稍後計算
+                    .build());
+
+            // 累計總額
+            totalRevenue = totalRevenue.add(revenue);
+            totalCost = totalCost.add(cost);
+
+            // 更新類別統計
+            ProfitAnalysisDto.CategoryProfit catProfit = categoryProfitMap.computeIfAbsent(categoryId,
+                    k -> ProfitAnalysisDto.CategoryProfit.builder()
+                            .categoryId(categoryId)
+                            .categoryName(categoryName)
+                            .productCount(0)
+                            .quantitySold(0)
+                            .revenue(BigDecimal.ZERO)
+                            .cost(BigDecimal.ZERO)
+                            .grossProfit(BigDecimal.ZERO)
+                            .profitMargin(BigDecimal.ZERO)
+                            .contributionRatio(BigDecimal.ZERO)
+                            .build());
+
+            catProfit.setProductCount(catProfit.getProductCount() + 1);
+            catProfit.setQuantitySold(catProfit.getQuantitySold() + quantitySold.intValue());
+            catProfit.setRevenue(catProfit.getRevenue().add(revenue));
+            catProfit.setCost(catProfit.getCost().add(cost));
+            catProfit.setGrossProfit(catProfit.getGrossProfit().add(profit));
+        }
+
+        // 計算總利潤
+        BigDecimal grossProfit = totalRevenue.subtract(totalCost);
+
+        // 計算商品的貢獻比例
+        for (ProfitAnalysisDto.ProductProfit pp : allProductProfits) {
+            if (grossProfit.compareTo(BigDecimal.ZERO) > 0) {
+                pp.setContributionRatio(pp.getGrossProfit()
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(grossProfit, 2, RoundingMode.HALF_UP));
+            }
+        }
+
+        // 排序取得 TOP 10 和 BOTTOM 10
+        allProductProfits.sort((a, b) -> b.getGrossProfit().compareTo(a.getGrossProfit()));
+        List<ProfitAnalysisDto.ProductProfit> topProfitProducts = allProductProfits.stream()
+                .limit(10)
+                .collect(java.util.stream.Collectors.toList());
+
+        List<ProfitAnalysisDto.ProductProfit> bottomProfitProducts = allProductProfits.stream()
+                .sorted((a, b) -> a.getGrossProfit().compareTo(b.getGrossProfit()))
+                .limit(10)
+                .collect(java.util.stream.Collectors.toList());
+
+        // 計算類別利潤率和貢獻比例
+        List<ProfitAnalysisDto.CategoryProfit> categoryProfits = new ArrayList<>(categoryProfitMap.values());
+        for (ProfitAnalysisDto.CategoryProfit cp : categoryProfits) {
+            if (cp.getRevenue().compareTo(BigDecimal.ZERO) > 0) {
+                cp.setProfitMargin(cp.getGrossProfit()
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(cp.getRevenue(), 2, RoundingMode.HALF_UP));
+            }
+            if (grossProfit.compareTo(BigDecimal.ZERO) > 0) {
+                cp.setContributionRatio(cp.getGrossProfit()
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(grossProfit, 2, RoundingMode.HALF_UP));
+            }
+        }
+        // 按利潤排序
+        categoryProfits.sort((a, b) -> b.getGrossProfit().compareTo(a.getGrossProfit()));
 
         // 訂單數量
-        Long orderCount = orderRepository.countByDateRange(startDate, endDate);
+        Long orderCount = orderRepository.countByStatusAndDateRange(
+                com.kamesan.erpapi.sales.entity.OrderStatus.PAID, startDate, endDate);
 
-        // 計算平均訂單金額
-        BigDecimal averageOrderValue = orderCount > 0 ?
-                totalRevenue.divide(BigDecimal.valueOf(orderCount), 2, RoundingMode.HALF_UP) :
-                BigDecimal.ZERO;
-
-        // 簡化版：成本估算為銷售額的 60%
-        BigDecimal estimatedCostRatio = new BigDecimal("0.60");
-        BigDecimal totalCost = totalRevenue.multiply(estimatedCostRatio);
-        BigDecimal grossProfit = totalRevenue.subtract(totalCost);
+        // 計算平均值
         BigDecimal grossProfitMargin = totalRevenue.compareTo(BigDecimal.ZERO) > 0 ?
                 grossProfit.multiply(BigDecimal.valueOf(100)).divide(totalRevenue, 2, RoundingMode.HALF_UP) :
                 BigDecimal.ZERO;
-
+        BigDecimal averageOrderValue = orderCount > 0 ?
+                totalRevenue.divide(BigDecimal.valueOf(orderCount), 2, RoundingMode.HALF_UP) :
+                BigDecimal.ZERO;
         BigDecimal averageOrderProfit = orderCount > 0 ?
                 grossProfit.divide(BigDecimal.valueOf(orderCount), 2, RoundingMode.HALF_UP) :
                 BigDecimal.ZERO;
@@ -291,8 +443,13 @@ public class ReportService {
                     com.kamesan.erpapi.sales.entity.OrderStatus.PAID, current, current);
             if (dayRevenue == null) dayRevenue = BigDecimal.ZERO;
 
-            Long dayOrderCount = orderRepository.countByDateRange(current, current);
-            BigDecimal dayCost = dayRevenue.multiply(estimatedCostRatio);
+            Long dayOrderCount = orderRepository.countByStatusAndDateRange(
+                    com.kamesan.erpapi.sales.entity.OrderStatus.PAID, current, current);
+            // 使用實際平均成本率計算每日成本
+            BigDecimal costRatio = totalRevenue.compareTo(BigDecimal.ZERO) > 0 ?
+                    totalCost.divide(totalRevenue, 4, RoundingMode.HALF_UP) :
+                    new BigDecimal("0.60");
+            BigDecimal dayCost = dayRevenue.multiply(costRatio);
             BigDecimal dayProfit = dayRevenue.subtract(dayCost);
             BigDecimal dayMargin = dayRevenue.compareTo(BigDecimal.ZERO) > 0 ?
                     dayProfit.multiply(BigDecimal.valueOf(100)).divide(dayRevenue, 2, RoundingMode.HALF_UP) :
@@ -300,7 +457,7 @@ public class ReportService {
 
             dailyProfits.add(ProfitAnalysisDto.DailyProfit.builder()
                     .date(current)
-                    .orderCount(dayOrderCount.intValue())
+                    .orderCount(dayOrderCount != null ? dayOrderCount.intValue() : 0)
                     .revenue(dayRevenue)
                     .cost(dayCost)
                     .grossProfit(dayProfit)
@@ -318,12 +475,12 @@ public class ReportService {
                 .totalCost(totalCost)
                 .grossProfit(grossProfit)
                 .grossProfitMargin(grossProfitMargin)
-                .orderCount(orderCount.intValue())
+                .orderCount(orderCount != null ? orderCount.intValue() : 0)
                 .averageOrderValue(averageOrderValue)
                 .averageOrderProfit(averageOrderProfit)
-                .topProfitProducts(new ArrayList<>())
-                .bottomProfitProducts(new ArrayList<>())
-                .categoryProfits(new ArrayList<>())
+                .topProfitProducts(topProfitProducts)
+                .bottomProfitProducts(bottomProfitProducts)
+                .categoryProfits(categoryProfits)
                 .dailyProfits(dailyProfits)
                 .build();
     }
