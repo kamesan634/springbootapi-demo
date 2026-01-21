@@ -66,7 +66,19 @@ public enum MovementType {
      * 盤虧出庫
      * <p>盤點發現實際數量少於帳面數量</p>
      */
-    ADJUST_OUT("盤虧出庫", false);
+    ADJUST_OUT("盤虧出庫", false),
+
+    /**
+     * 盤點入庫
+     * <p>盤點時發現庫存增加</p>
+     */
+    COUNT_IN("盤點入庫", true),
+
+    /**
+     * 盤點出庫
+     * <p>盤點時發現庫存減少</p>
+     */
+    COUNT_OUT("盤點出庫", false);
 
     /**
      * 異動類型的中文描述
