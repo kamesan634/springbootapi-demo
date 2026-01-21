@@ -44,7 +44,7 @@ spring:
     # Hibernate 配置
     hibernate:
       # DDL 自動處理（開發環境使用 validate，由 Flyway 管理 schema）
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         # 格式化 SQL

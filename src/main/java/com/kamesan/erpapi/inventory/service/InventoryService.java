@@ -1,5 +1,9 @@
 package com.kamesan.erpapi.inventory.service;
 
+import com.kamesan.erpapi.accounts.entity.Store;
+import com.kamesan.erpapi.accounts.entity.User;
+import com.kamesan.erpapi.accounts.repository.StoreRepository;
+import com.kamesan.erpapi.accounts.repository.UserRepository;
 import com.kamesan.erpapi.common.exception.BusinessException;
 import com.kamesan.erpapi.inventory.dto.AdjustInventoryRequest;
 import com.kamesan.erpapi.inventory.dto.InventoryDto;
@@ -9,6 +13,8 @@ import com.kamesan.erpapi.inventory.entity.InventoryMovement;
 import com.kamesan.erpapi.inventory.entity.MovementType;
 import com.kamesan.erpapi.inventory.repository.InventoryMovementRepository;
 import com.kamesan.erpapi.inventory.repository.InventoryRepository;
+import com.kamesan.erpapi.products.entity.Product;
+import com.kamesan.erpapi.products.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -57,6 +65,21 @@ public class InventoryService {
      * 庫存異動記錄 Repository
      */
     private final InventoryMovementRepository movementRepository;
+
+    /**
+     * 商品 Repository
+     */
+    private final ProductRepository productRepository;
+
+    /**
+     * 門市/倉庫 Repository
+     */
+    private final StoreRepository storeRepository;
+
+    /**
+     * 使用者 Repository
+     */
+    private final UserRepository userRepository;
 
     // ==================== 庫存查詢 ====================
 
@@ -489,9 +512,42 @@ public class InventoryService {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
-        return movementRepository.searchMovements(
-                        productId, warehouseId, movementType, startDateTime, endDateTime, pageable)
-                .map(InventoryMovementDto::fromEntity);
+        Page<InventoryMovement> movements = movementRepository.searchMovements(
+                productId, warehouseId, movementType, startDateTime, endDateTime, pageable);
+
+        // 收集所有需要查詢的 ID
+        Set<Long> productIds = movements.getContent().stream()
+                .map(InventoryMovement::getProductId).collect(Collectors.toSet());
+        Set<Long> warehouseIds = movements.getContent().stream()
+                .map(InventoryMovement::getWarehouseId).collect(Collectors.toSet());
+        Set<Long> operatorIds = movements.getContent().stream()
+                .map(InventoryMovement::getOperatorId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        // 批次查詢關聯資料
+        Map<Long, Product> productMap = productRepository.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+        Map<Long, Store> storeMap = storeRepository.findAllById(warehouseIds).stream()
+                .collect(Collectors.toMap(Store::getId, s -> s));
+        Map<Long, User> userMap = operatorIds.isEmpty() ? Map.of() :
+                userRepository.findAllById(operatorIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+
+        // 轉換為 DTO 並填入關聯資料
+        return movements.map(movement -> {
+            Product product = productMap.get(movement.getProductId());
+            Store store = storeMap.get(movement.getWarehouseId());
+            User operator = movement.getOperatorId() != null ? userMap.get(movement.getOperatorId()) : null;
+
+            return InventoryMovementDto.fromEntity(
+                    movement,
+                    product != null ? product.getName() : null,
+                    product != null ? product.getSku() : null,
+                    store != null ? store.getName() : null,
+                    operator != null ? operator.getName() : null
+            );
+        });
     }
 
     // ==================== 私有方法 ====================
